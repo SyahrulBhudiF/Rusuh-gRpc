@@ -1,0 +1,27 @@
+[package]
+name = "grpc-auth"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tonic = "0.13.0"
+prost = "0.13.5"
+tokio = { version = "1.44.2", features = ["full"] }
+sqlx = { version = "0.8.5", features = ["postgres", "runtime-tokio-native-tls", "uuid", "chrono"] }
+dotenv = "0.15"
+uuid = { version = "1.16.0", features = ["v4"] }
+serde = { version = "1.0.219", features = ["derive"] }
+jsonwebtoken = "9.3.1"
+async-trait = "0.1.88"
+bcrypt = "0.17.0"
+tonic-reflection = "0.13.0"
+chrono = "0.4.41"
+
+[build-dependencies]
+prost-build = "0.13.5"
+tonic-build = "0.13.0"
+
+[lib]
+name = "grpc_auth"
+path = "src/lib.rs"
+
