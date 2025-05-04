@@ -29,6 +29,8 @@ pub struct LoginRequest {
 pub struct LoginResponse {
     #[prost(string, tag = "1")]
     pub access_token: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub refresh_token: ::prost::alloc::string::String,
 }
 /// Generated client implementations.
 pub mod auth_service_client {

@@ -1,4 +1,4 @@
-use crate::domain::jwt::{AuthClaims, get_jwt_secret};
+use crate::domain::jwt::Token;
 use crate::domain::repository::Repository;
 use crate::domain::user::User;
 use crate::pb::auth::auth_service_server::AuthService;
@@ -6,9 +6,8 @@ use crate::pb::auth::{
     LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, User as ProtoUser,
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
-use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
-use std::time::{Duration, SystemTime};
 use tonic::{Request, Response, Status};
+use tracing::{error, info};
 
 pub struct AuthServiceImpl {
     user_repo: Box<dyn Repository<User>>,
@@ -28,24 +27,28 @@ impl AuthService for AuthServiceImpl {
     ) -> Result<Response<RegisterResponse>, Status> {
         let register_req = request.into_inner();
 
-        let hashed_password = hash(&register_req.password, DEFAULT_COST).unwrap();
+        let hashed_password = hash(&register_req.password, DEFAULT_COST).map_err(|_| {
+            error!("Failed to hash password");
+            Status::internal("Failed to hash password")
+        })?;
 
-        let user = User::new(register_req.email.clone(), hashed_password);
+        let user = User::new(register_req.email, hashed_password);
 
-        self.user_repo
-            .save(&user)
-            .await
-            .map_err(|e| Status::internal(format!("Failed to save user: {}", e)))?;
+        self.user_repo.save(&user).await.map_err(|e| {
+            error!("Failed to save user: {}", e);
+            Status::internal(format!("Failed to save user: {}", e))
+        })?;
 
         let proto_user = ProtoUser {
             id: user.id.to_string(),
-            email: user.email,
+            email: user.email.clone(),
         };
 
         let response = RegisterResponse {
             user: Some(proto_user),
         };
 
+        info!("User registered successfully: {}", user.email);
         Ok(Response::new(response))
     }
 
@@ -59,26 +62,33 @@ impl AuthService for AuthServiceImpl {
             .user_repo
             .find_by_coll("email", &login_req.email)
             .await
-            .unwrap()
+            .map_err(|_| {
+                error!("Failed to query user");
+                Status::not_found("Failed to query user")
+            })?
         {
-            if verify(&login_req.password, &user.password).unwrap() {
-                let expiration = SystemTime::now() + Duration::new(3600, 0);
-                let claims = AuthClaims::new(user.id.to_string(), expiration);
-
-                let token = encode(
-                    &Header::new(Algorithm::HS256),
-                    &claims,
-                    &EncodingKey::from_secret(get_jwt_secret().as_ref()),
-                )
-                .unwrap();
+            return if verify(&login_req.password, &user.password).unwrap_or(false) {
+                let (access_token, refresh_token) = Token::create_tokens(user.id.to_string())
+                    .await
+                    .map_err(|_| {
+                        error!("Failed to generate tokens");
+                        Status::internal("Failed to generate tokens")
+                    })?;
 
                 let response = LoginResponse {
-                    access_token: token,
+                    access_token,
+                    refresh_token,
                 };
-                return Ok(Response::new(response));
-            }
+
+                info!("User logged in successfully: {}", user.email);
+                Ok(Response::new(response))
+            } else {
+                error!("Invalid password or email for user: {}", login_req.email);
+                Err(Status::unauthenticated("Invalid password or email"))
+            };
         }
 
+        error!("Invalid email or password");
         Err(Status::unauthenticated("Invalid email or password"))
     }
 }

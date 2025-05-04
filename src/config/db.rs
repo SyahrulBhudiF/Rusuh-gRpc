@@ -1,9 +1,9 @@
 use dotenv::dotenv;
-use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
-use std::env;
+use sqlx::{Error, PgPool};
+use std::{env, time};
 
-pub async fn get_db_pool() -> Result<PgPool, sqlx::Error> {
+pub async fn get_db_pool() -> Result<PgPool, Error> {
     dotenv().ok();
 
     let database_url =
@@ -11,6 +11,7 @@ pub async fn get_db_pool() -> Result<PgPool, sqlx::Error> {
 
     PgPoolOptions::new()
         .max_connections(10)
+        .acquire_timeout(time::Duration::from_secs(5))
         .connect(&database_url)
         .await
 }
