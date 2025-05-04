@@ -610,26 +610,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
-name = "grpc-auth"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bcrypt",
- "chrono",
- "dotenv",
- "jsonwebtoken",
- "prost",
- "prost-build",
- "serde",
- "sqlx",
- "tokio",
- "tonic",
- "tonic-build",
- "tonic-reflection",
- "uuid",
-]
-
-[[package]]
 name = "h2"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -991,9 +971,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.10.5"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
 dependencies = [
  "either",
 ]
@@ -1537,9 +1517,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.11"
+version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2f103c6d277498fbceb16e84d317e2a400f160f46904d5f5410848c829511a3"
+checksum = "928fca9cf2aa042393a8325b9ead81d2f0df4cb12e1e24cef072922ccd99c5af"
 dependencies = [
  "bitflags",
 ]
@@ -1631,6 +1611,26 @@ name = "rustversion"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eded382c5f5f786b989652c49544c4877d9f015cc22e145a5ea8ea66c2921cd2"
+
+[[package]]
+name = "rusuh-grpc"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bcrypt",
+ "chrono",
+ "dotenv",
+ "jsonwebtoken",
+ "prost",
+ "prost-build",
+ "serde",
+ "sqlx",
+ "tokio",
+ "tonic",
+ "tonic-build",
+ "tonic-reflection",
+ "uuid",
+]
 
 [[package]]
 name = "ryu"

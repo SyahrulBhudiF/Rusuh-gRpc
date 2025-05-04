@@ -1,7 +1,7 @@
-use grpc_auth::config::db::get_db_pool;
-use grpc_auth::handler::auth_handler::AuthHandler;
-use grpc_auth::infrastructure::user_repository::UserRepositoryImpl;
-use grpc_auth::pb::auth::auth_service_server::AuthServiceServer;
+use rusuh_grpc::config::db::get_db_pool;
+use rusuh_grpc::handler::auth_handler::AuthHandler;
+use rusuh_grpc::infrastructure::user_repository::UserRepositoryImpl;
+use rusuh_grpc::pb::auth::auth_service_server::AuthServiceServer;
 use tonic::transport::Server;
 use tonic_reflection::server::Builder as ReflectionBuilder;
 
