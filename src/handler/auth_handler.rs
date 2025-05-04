@@ -1,9 +1,11 @@
+use crate::domain::entity::user::User;
+use crate::domain::redis_repository::RedisRepository;
 use crate::domain::repository::Repository;
-use crate::domain::user::User;
 use crate::pb::auth::auth_service_server::AuthService;
 use crate::pb::auth::{LoginRequest, RegisterRequest};
 use crate::pb::auth::{LoginResponse, RegisterResponse};
 use crate::service::auth_service::AuthServiceImpl;
+use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 pub struct AuthHandler {
@@ -11,9 +13,12 @@ pub struct AuthHandler {
 }
 
 impl AuthHandler {
-    pub fn new(user_repo: Box<dyn Repository<User>>) -> Self {
+    pub fn new(
+        user_repo: Arc<dyn Repository<User> + Send + Sync>,
+        redis_repo: Arc<dyn RedisRepository + Send + Sync>,
+    ) -> Self {
         AuthHandler {
-            auth_service: AuthServiceImpl::new(user_repo),
+            auth_service: AuthServiceImpl::new(user_repo, redis_repo),
         }
     }
 }

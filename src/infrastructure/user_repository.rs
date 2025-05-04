@@ -1,5 +1,5 @@
 use crate::domain::repository::Repository;
-use crate::domain::user::User;
+use crate::domain::entity::user::User;
 use async_trait::async_trait;
 use sqlx::Error;
 use uuid::Uuid;

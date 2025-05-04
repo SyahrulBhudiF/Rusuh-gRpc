@@ -1,17 +1,26 @@
 use crate::config::db::get_db_pool;
 use crate::handler::auth_handler::AuthHandler;
+use crate::infrastructure::redis_repository::RedisRepositoryImpl;
 use crate::infrastructure::user_repository::UserRepositoryImpl;
 use crate::pb::auth::auth_service_server::AuthServiceServer;
+use std::error;
+use std::sync::Arc;
 use tonic::transport::Server;
 use tonic_reflection::server::Builder as ReflectionBuilder;
 use tracing::info;
 
 const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../../descriptor.bin");
 
-pub async fn server() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn server() -> Result<(), Box<dyn error::Error>> {
+    tracing_subscriber::fmt::init();
+    dotenv::dotenv().ok();
+
     let pool = get_db_pool().await?;
-    let user_repo = Box::new(UserRepositoryImpl { pool });
-    let auth_handler = AuthHandler::new(user_repo);
+
+    let user_repo = Arc::new(UserRepositoryImpl { pool });
+    let redis_repo = Arc::new(RedisRepositoryImpl::new());
+
+    let auth_handler = AuthHandler::new(user_repo, redis_repo);
 
     let addr = "0.0.0.0:50051".parse()?;
     info!("Server listening on {}", addr);

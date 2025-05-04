@@ -1,21 +1,30 @@
+use crate::domain::entity::user::User;
 use crate::domain::jwt::Token;
+use crate::domain::redis_repository::RedisRepository;
 use crate::domain::repository::Repository;
-use crate::domain::user::User;
 use crate::pb::auth::auth_service_server::AuthService;
 use crate::pb::auth::{
     LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, User as ProtoUser,
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
+use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
 pub struct AuthServiceImpl {
-    user_repo: Box<dyn Repository<User>>,
+    user_repo: Arc<dyn Repository<User> + Send + Sync>,
+    redis_repo: Arc<dyn RedisRepository + Send + Sync>,
 }
 
 impl AuthServiceImpl {
-    pub fn new(user_repo: Box<dyn Repository<User>>) -> Self {
-        AuthServiceImpl { user_repo }
+    pub fn new(
+        user_repo: Arc<dyn Repository<User> + Send + Sync>,
+        redis_repo: Arc<dyn RedisRepository + Send + Sync>,
+    ) -> Self {
+        AuthServiceImpl {
+            user_repo,
+            redis_repo,
+        }
     }
 }
 
@@ -75,6 +84,17 @@ impl AuthService for AuthServiceImpl {
                         Status::internal("Failed to generate tokens")
                     })?;
 
+                let user_json = serde_json::to_string(&user).map_err(|_| {
+                    error!("Failed to serialize user");
+                    Status::internal("Failed to serialize user")
+                })?;
+
+                self.redis_repo
+                    .set_value(&access_token, &*user_json)
+                    .await
+                    .expect("Failed to set value in Redis at Login");
+                info!("Redis set value for user: {}", user_json);
+
                 let response = LoginResponse {
                     access_token,
                     refresh_token,
@@ -88,7 +108,7 @@ impl AuthService for AuthServiceImpl {
             };
         }
 
-        error!("Invalid email or password");
+        error!("Invalid email or password for user: {}", login_req.email);
         Err(Status::unauthenticated("Invalid email or password"))
     }
 }
