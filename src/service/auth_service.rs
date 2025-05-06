@@ -119,7 +119,7 @@ impl AuthService for AuthServiceImpl {
         request: Request<LogoutRequest>,
     ) -> Result<Response<LogoutResponse>, Status> {
         let metadata = request.metadata().clone();
-        validate_access_token(&metadata).await?;
+        validate_access_token(&metadata, &self.redis_repo).await?;
 
         let access_token = extract_token_from_metadata(&metadata)
             .map_err(|e| {

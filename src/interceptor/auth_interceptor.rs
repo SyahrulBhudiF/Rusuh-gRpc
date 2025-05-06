@@ -1,6 +1,7 @@
 use crate::domain::jwt::Token;
 use crate::domain::redis_repository::RedisRepository;
 use crate::infrastructure::redis_repository::RedisRepositoryImpl;
+use std::sync::Arc;
 use tonic::{Request, Status};
 
 pub fn extract_token_from_metadata(
@@ -21,12 +22,13 @@ pub fn extract_token_from_metadata(
     }
 }
 
-pub async fn authenticate_interceptor(req: Request<()>) -> Result<Request<()>, Status> {
+pub async fn authenticate_interceptor(
+    req: Request<()>,
+    redis_repo: &Arc<dyn RedisRepository + Send + Sync>,
+) -> Result<Request<()>, Status> {
     let token = extract_token_from_metadata(req.metadata())?;
 
-    RedisRepositoryImpl::new()
-        .ensure_not_blacklisted(token)
-        .await?;
+    redis_repo.ensure_not_blacklisted(token).await?;
 
     match Token::validate_token(token, "ACCESS_SECRET") {
         Ok(_) => Ok(req),
@@ -34,12 +36,13 @@ pub async fn authenticate_interceptor(req: Request<()>) -> Result<Request<()>, S
     }
 }
 
-pub async fn validate_access_token(metadata: &tonic::metadata::MetadataMap) -> Result<(), Status> {
+pub async fn validate_access_token(
+    metadata: &tonic::metadata::MetadataMap,
+    redis_repo: &Arc<dyn RedisRepository + Send + Sync>,
+) -> Result<(), Status> {
     let token = extract_token_from_metadata(metadata)?;
 
-    RedisRepositoryImpl::new()
-        .ensure_not_blacklisted(token)
-        .await?;
+    redis_repo.ensure_not_blacklisted(token).await?;
 
     match Token::validate_token(token, "ACCESS_SECRET") {
         Ok(_) => Ok(()),
