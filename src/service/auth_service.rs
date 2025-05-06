@@ -2,9 +2,11 @@ use crate::domain::entity::user::User;
 use crate::domain::jwt::Token;
 use crate::domain::redis_repository::RedisRepository;
 use crate::domain::repository::Repository;
+use crate::interceptor::auth_interceptor::{extract_token_from_metadata, validate_access_token};
 use crate::pb::auth::auth_service_server::AuthService;
 use crate::pb::auth::{
-    LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, User as ProtoUser,
+    LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
+    User as ProtoUser,
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
 use std::sync::Arc;
@@ -110,5 +112,74 @@ impl AuthService for AuthServiceImpl {
 
         error!("Invalid email or password for user: {}", login_req.email);
         Err(Status::unauthenticated("Invalid email or password"))
+    }
+
+    async fn logout(
+        &self,
+        request: Request<LogoutRequest>,
+    ) -> Result<Response<LogoutResponse>, Status> {
+        let metadata = request.metadata().clone();
+        validate_access_token(&metadata)?;
+
+        let access_token = match extract_token_from_metadata(&metadata) {
+            Ok(token) => token.to_string(),
+            Err(e) => {
+                error!("Failed to extract token from metadata: {}", e);
+                return Err(Status::unauthenticated("Invalid token"));
+            }
+        };
+
+        let logout_req = request.into_inner();
+
+        match self.redis_repo.get_value(&access_token).await {
+            Ok(value) if value == "BLACKLISTED" => {
+                error!("Access token already blacklisted, possible reuse attempt");
+                return Err(Status::unauthenticated(
+                    "Token already invalidated or expired",
+                ));
+            }
+            _ => {}
+        }
+
+        match self.redis_repo.get_value(&logout_req.refresh_token).await {
+            Ok(value) if value == "BLACKLISTED" => {
+                error!("Refresh token already blacklisted, possible reuse attempt");
+                return Err(Status::unauthenticated("Refresh token already invalidated"));
+            }
+            _ => {}
+        }
+
+        match Token::validate_token(&logout_req.refresh_token, "REFRESH_SECRET") {
+            Ok(_) => {
+                if let Err(e) = self
+                    .redis_repo
+                    .set_value(&logout_req.refresh_token, "BLACKLISTED")
+                    .await
+                {
+                    error!("Failed to blacklist refresh token: {}", e.to_string());
+                    return Err(Status::internal("Failed to complete logout process"));
+                }
+
+                if let Err(e) = self
+                    .redis_repo
+                    .set_value(&access_token, "BLACKLISTED")
+                    .await
+                {
+                    error!("Failed to blacklist access token: {}", e.to_string());
+                }
+
+                info!("User logged out successfully: {}", logout_req.refresh_token);
+
+                let response = LogoutResponse {
+                    message: "Logout successful".to_string(),
+                };
+
+                Ok(Response::new(response))
+            }
+            Err(e) => {
+                error!("Failed to validate refresh token: {}", e);
+                Err(Status::unauthenticated("Invalid refresh token"))
+            }
+        }
     }
 }

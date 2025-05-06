@@ -2,7 +2,7 @@ use crate::domain::entity::user::User;
 use crate::domain::redis_repository::RedisRepository;
 use crate::domain::repository::Repository;
 use crate::pb::auth::auth_service_server::AuthService;
-use crate::pb::auth::{LoginRequest, RegisterRequest};
+use crate::pb::auth::{LoginRequest, LogoutRequest, LogoutResponse, RegisterRequest};
 use crate::pb::auth::{LoginResponse, RegisterResponse};
 use crate::service::auth_service::AuthServiceImpl;
 use std::sync::Arc;
@@ -37,5 +37,12 @@ impl AuthService for AuthHandler {
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginResponse>, Status> {
         self.auth_service.login(request).await
+    }
+
+    async fn logout(
+        &self,
+        request: Request<LogoutRequest>,
+    ) -> Result<Response<LogoutResponse>, Status> {
+        self.auth_service.logout(request).await
     }
 }

@@ -1,4 +1,4 @@
-use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use std::env;
 use std::time::{Duration, SystemTime};
 use tokio;
@@ -19,19 +19,19 @@ impl Token {
         Token { sub, exp }
     }
 
-    pub fn get_jwt_secret() -> Vec<u8> {
-        match env::var("JWT_SECRET") {
-            Ok(secret) => secret.into_bytes(),
+    pub fn get_jwt_secret(secret: &str) -> String {
+        match env::var(secret) {
+            Ok(secret) => secret.parse().unwrap(),
             Err(_) => panic!("JWT_SECRET environment variable is not set"),
         }
     }
 
-    async fn create_token(&self, expiration: SystemTime) -> Result<String, Status> {
+    async fn create_token(&self, expiration: SystemTime, secret: &str) -> Result<String, Status> {
         let claims = Token::new(self.sub.clone(), expiration);
         encode(
             &Header::new(Algorithm::HS256),
             &claims,
-            &EncodingKey::from_secret(Token::get_jwt_secret().as_ref()),
+            &EncodingKey::from_secret(Token::get_jwt_secret(secret).as_ref()),
         )
         .map_err(|_| Status::internal("Failed to create token"))
     }
@@ -53,10 +53,25 @@ impl Token {
         let token = Token::new(user_id, expiration);
 
         let (access_token, refresh_token) = tokio::try_join!(
-            token.create_token(expiration),
-            token.create_token(expiration_refresh)
+            token.create_token(expiration, "ACCESS_SECRET"),
+            token.create_token(expiration_refresh, "REFRESH_SECRET"),
         )?;
 
         Ok((access_token, refresh_token))
+    }
+
+    pub fn validate_token(token: &str, secret: &str) -> Result<Token, Status> {
+        jsonwebtoken::decode::<Token>(
+            token,
+            &jsonwebtoken::DecodingKey::from_secret(Token::get_jwt_secret(secret).as_ref()),
+            &jsonwebtoken::Validation::new(Algorithm::HS256),
+        )
+        .map(|data| data.claims)
+        .map_err(|e| match e.kind() {
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                Status::unauthenticated("Token expired")
+            }
+            _ => Status::unauthenticated("Invalid token"),
+        })
     }
 }

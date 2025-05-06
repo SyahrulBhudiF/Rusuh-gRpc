@@ -25,6 +25,10 @@ pub mod infrastructure {
     pub mod user_repository;
 }
 
+pub mod interceptor {
+    pub mod auth_interceptor;
+}
+
 pub mod pb {
     pub mod auth;
 }
