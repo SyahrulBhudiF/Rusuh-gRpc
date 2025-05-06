@@ -1,6 +1,8 @@
 use crate::config::redis::RedisClient;
 use crate::domain::redis_repository::RedisRepository;
 use redis::{AsyncCommands, RedisResult};
+use tonic::Status;
+use tracing::log::error;
 
 pub struct RedisRepositoryImpl {
     pub redis: RedisClient,
@@ -39,5 +41,33 @@ impl RedisRepository for RedisRepositoryImpl {
     async fn pull_value(&self, key: &str) -> RedisResult<Option<String>> {
         let mut conn = self.redis.client.get_multiplexed_tokio_connection().await?;
         conn.get_del(key).await
+    }
+
+    async fn blacklist_token(&self, token: &str) -> RedisResult<()> {
+        let mut conn = self.redis.client.get_multiplexed_tokio_connection().await?;
+        conn.set(token, "BLACKLISTED").await
+    }
+
+    async fn ensure_not_blacklisted(&self, token: &str) -> Result<(), Status> {
+        let mut conn = self
+            .redis
+            .client
+            .get_multiplexed_tokio_connection()
+            .await
+            .map_err(|e| {
+                error!("Failed to get Redis connection: {}", e);
+                Status::internal("Failed to access Redis")
+            })?;
+
+        match conn.get::<_, Option<String>>(token).await {
+            Ok(Some(ref value)) if value == "BLACKLISTED" => Err(Status::unauthenticated(
+                "Token already invalidated or blacklisted",
+            )),
+            Ok(_) => Ok(()),
+            Err(e) => {
+                error!("Redis error while checking blacklist: {}", e);
+                Err(Status::internal("Internal error"))
+            }
+        }
     }
 }

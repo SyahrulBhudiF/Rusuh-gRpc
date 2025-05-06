@@ -119,67 +119,41 @@ impl AuthService for AuthServiceImpl {
         request: Request<LogoutRequest>,
     ) -> Result<Response<LogoutResponse>, Status> {
         let metadata = request.metadata().clone();
-        validate_access_token(&metadata)?;
+        validate_access_token(&metadata).await?;
 
-        let access_token = match extract_token_from_metadata(&metadata) {
-            Ok(token) => token.to_string(),
-            Err(e) => {
-                error!("Failed to extract token from metadata: {}", e);
-                return Err(Status::unauthenticated("Invalid token"));
-            }
-        };
+        let access_token = extract_token_from_metadata(&metadata)
+            .map_err(|e| {
+                error!("Failed to extract token: {}", e);
+                Status::unauthenticated("Invalid token")
+            })?
+            .to_string();
 
         let logout_req = request.into_inner();
+        let refresh_token = &logout_req.refresh_token;
 
-        match self.redis_repo.get_value(&access_token).await {
-            Ok(Some(value)) if value == "BLACKLISTED" => {
-                error!("Access token already blacklisted, possible reuse attempt");
-                return Err(Status::unauthenticated(
-                    "Token already invalidated or expired",
-                ));
-            }
-            _ => {}
-        }
+        self.redis_repo
+            .ensure_not_blacklisted(refresh_token)
+            .await?;
 
-        match self.redis_repo.get_value(&logout_req.refresh_token).await {
-            Ok(Some(value)) if value == "BLACKLISTED" => {
-                error!("Refresh token already blacklisted, possible reuse attempt");
-                return Err(Status::unauthenticated("Refresh token already invalidated"));
-            }
-            _ => {}
-        }
+        Token::validate_token(refresh_token, "REFRESH_SECRET").map_err(|e| {
+            error!("Invalid refresh token: {}", e);
+            Status::unauthenticated("Invalid refresh token")
+        })?;
 
-        match Token::validate_token(&logout_req.refresh_token, "REFRESH_SECRET") {
-            Ok(_) => {
-                if let Err(e) = self
-                    .redis_repo
-                    .set_value(&logout_req.refresh_token, "BLACKLISTED")
-                    .await
-                {
-                    error!("Failed to blacklist refresh token: {}", e.to_string());
-                    return Err(Status::internal("Failed to complete logout process"));
-                }
+        self.redis_repo
+            .blacklist_token(refresh_token)
+            .await
+            .map_err(|e| {
+                error!("Failed to blacklist refresh token: {}", e);
+                Status::internal("Logout failed")
+            })?;
 
-                if let Err(e) = self
-                    .redis_repo
-                    .set_value(&access_token, "BLACKLISTED")
-                    .await
-                {
-                    error!("Failed to blacklist access token: {}", e.to_string());
-                }
+        self.redis_repo.blacklist_token(&access_token).await.ok();
 
-                info!("User logged out successfully: {}", logout_req.refresh_token);
+        info!("Logout success: {}", refresh_token);
 
-                let response = LogoutResponse {
-                    message: "Logout successful".to_string(),
-                };
-
-                Ok(Response::new(response))
-            }
-            Err(e) => {
-                error!("Failed to validate refresh token: {}", e);
-                Err(Status::unauthenticated("Invalid refresh token"))
-            }
-        }
+        Ok(Response::new(LogoutResponse {
+            message: "Logout successful".to_string(),
+        }))
     }
 }
