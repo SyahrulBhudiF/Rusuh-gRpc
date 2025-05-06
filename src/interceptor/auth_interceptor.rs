@@ -1,6 +1,5 @@
 use crate::domain::jwt::Token;
 use crate::domain::redis_repository::RedisRepository;
-use crate::infrastructure::redis_repository::RedisRepositoryImpl;
 use std::sync::Arc;
 use tonic::{Request, Status};
 
