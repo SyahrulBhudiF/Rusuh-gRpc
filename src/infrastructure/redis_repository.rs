@@ -20,7 +20,7 @@ impl RedisRepository for RedisRepositoryImpl {
         conn.set(key, value).await
     }
 
-    async fn get_value(&self, key: &str) -> RedisResult<String> {
+    async fn get_value(&self, key: &str) -> RedisResult<Option<String>> {
         let mut conn = self.redis.client.get_multiplexed_tokio_connection().await?;
         conn.get(key).await
     }
@@ -30,13 +30,13 @@ impl RedisRepository for RedisRepositoryImpl {
         conn.del(key).await
     }
 
-    async fn exists(&self, key: &str) -> RedisResult<bool> {
+    async fn exists(&self, key: &str) -> RedisResult<Option<bool>> {
         let mut conn = self.redis.client.get_multiplexed_tokio_connection().await?;
         let result: i32 = conn.exists(key).await?;
-        Ok(result > 0)
+        Ok(Some(result > 0))
     }
 
-    async fn pull_value(&self, key: &str) -> RedisResult<String> {
+    async fn pull_value(&self, key: &str) -> RedisResult<Option<String>> {
         let mut conn = self.redis.client.get_multiplexed_tokio_connection().await?;
         conn.get_del(key).await
     }

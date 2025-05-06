@@ -132,7 +132,7 @@ impl AuthService for AuthServiceImpl {
         let logout_req = request.into_inner();
 
         match self.redis_repo.get_value(&access_token).await {
-            Ok(value) if value == "BLACKLISTED" => {
+            Ok(Some(value)) if value == "BLACKLISTED" => {
                 error!("Access token already blacklisted, possible reuse attempt");
                 return Err(Status::unauthenticated(
                     "Token already invalidated or expired",
@@ -142,7 +142,7 @@ impl AuthService for AuthServiceImpl {
         }
 
         match self.redis_repo.get_value(&logout_req.refresh_token).await {
-            Ok(value) if value == "BLACKLISTED" => {
+            Ok(Some(value)) if value == "BLACKLISTED" => {
                 error!("Refresh token already blacklisted, possible reuse attempt");
                 return Err(Status::unauthenticated("Refresh token already invalidated"));
             }
