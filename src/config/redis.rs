@@ -1,5 +1,5 @@
 use redis::{Client, RedisResult};
-use std::env;
+use crate::cfg; // Import cfg from the crate root
 
 pub struct RedisClient {
     pub client: Client,
@@ -7,9 +7,10 @@ pub struct RedisClient {
 
 impl RedisClient {
     pub fn new() -> RedisResult<Self> {
-        let host = env::var("REDIS_HOST").unwrap_or_else(|_| "localhost".to_string());
-        let port = env::var("REDIS_PORT").unwrap_or_else(|_| "6379".to_string());
-        let password = env::var("REDIS_PASSWORD").ok();
+        let config = cfg();
+        let host = &config.redis_host;
+        let port = config.redis_port;
+        let password = config.redis_password.as_deref(); // Use as_deref for Option<String>
 
         let url = if let Some(pw) = password {
             format!("redis://:{}@{}:{}/", pw, host, port)

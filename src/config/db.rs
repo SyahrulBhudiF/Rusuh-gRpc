@@ -1,10 +1,11 @@
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Error, PgPool};
-use std::{env, time};
+use std::time;
+use crate::cfg; // Import cfg from the crate root
 
 pub async fn get_db_pool() -> Result<PgPool, Error> {
-    let database_url =
-        env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file or environment");
+    let config = cfg();
+    let database_url = &config.database_url;
 
     PgPoolOptions::new()
         .max_connections(10)

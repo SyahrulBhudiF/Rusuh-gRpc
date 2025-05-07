@@ -1,5 +1,5 @@
+use crate::cfg;
 use crate::domain::entity::user::User;
-use crate::domain::jwt::Token;
 use crate::domain::redis_repository::RedisRepository;
 use crate::domain::repository::Repository;
 use crate::interceptor::auth_interceptor::{extract_token_from_metadata, validate_access_token};
@@ -8,6 +8,7 @@ use crate::pb::auth::{
     LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
     User as ProtoUser,
 };
+use crate::util::jwt::Token;
 use bcrypt::{DEFAULT_COST, hash, verify};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -135,7 +136,8 @@ impl AuthService for AuthServiceImpl {
             .ensure_not_blacklisted(refresh_token)
             .await?;
 
-        Token::validate_token(refresh_token, "REFRESH_SECRET").map_err(|e| {
+        let config = cfg();
+        Token::validate_token(refresh_token, &config.refresh_secret).map_err(|e| {
             error!("Invalid refresh token: {}", e);
             Status::unauthenticated("Invalid refresh token")
         })?;
