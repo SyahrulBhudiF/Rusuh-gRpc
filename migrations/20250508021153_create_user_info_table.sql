@@ -14,5 +14,5 @@ CREATE TABLE user_info
     gender      user_gender  NOT NULL,
     birth_date  DATE         NOT NULL,
     created_at  TIMESTAMPZ   NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPZ   NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPZ   NOT NULL DEFAULT NOW()
 )
