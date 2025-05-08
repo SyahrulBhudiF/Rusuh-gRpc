@@ -1,5 +1,6 @@
 pub mod config {
     pub mod db;
+    pub mod env;
     pub mod redis;
 }
 
@@ -11,7 +12,6 @@ pub mod domain {
     pub mod entity {
         pub mod user;
     }
-    pub mod jwt;
     pub mod redis_repository;
     pub mod repository;
 }
@@ -36,3 +36,13 @@ pub mod pb {
 pub mod service {
     pub mod auth_service;
 }
+
+pub mod util {
+    pub mod email;
+    pub mod jwt;
+    pub mod totp;
+}
+
+pub use config::env::cfg;
+pub use util::email::email;
+pub use util::totp::otp;

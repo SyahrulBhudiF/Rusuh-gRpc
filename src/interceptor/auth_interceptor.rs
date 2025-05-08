@@ -1,5 +1,6 @@
-use crate::domain::jwt::Token;
+use crate::cfg;
 use crate::domain::redis_repository::RedisRepository;
+use crate::util::jwt::Token;
 use std::sync::Arc;
 use tonic::{Request, Status};
 
@@ -29,7 +30,8 @@ pub async fn authenticate_interceptor(
 
     redis_repo.ensure_not_blacklisted(token).await?;
 
-    match Token::validate_token(token, "ACCESS_SECRET") {
+    let config = cfg();
+    match Token::validate_token(token, &config.access_secret) {
         Ok(_) => Ok(req),
         Err(status) => Err(status),
     }
@@ -43,7 +45,8 @@ pub async fn validate_access_token(
 
     redis_repo.ensure_not_blacklisted(token).await?;
 
-    match Token::validate_token(token, "ACCESS_SECRET") {
+    let config = cfg();
+    match Token::validate_token(token, &config.access_secret) {
         Ok(_) => Ok(()),
         Err(status) => Err(status),
     }

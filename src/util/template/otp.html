@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Kode OTP Anda</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333333;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .otp {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 16px 0;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #888888;
+            margin-top: 32px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Verifikasi Kode OTP</h2>
+    <p>Gunakan kode OTP berikut untuk melanjutkan proses Anda:</p>
+    <div class="otp">{{ otp_code }}</div>
+    <p>Jangan bagikan kode ini kepada siapa pun. Kode ini hanya berlaku untuk beberapa menit.</p>
+    <div class="footer">
+        Email ini dikirim secara otomatis. Harap tidak membalas email ini.
+    </div>
+</div>
+</body>
+</html>
