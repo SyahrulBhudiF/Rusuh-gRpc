@@ -41,6 +41,7 @@ pub mod util {
     pub mod email;
     pub mod jwt;
     pub mod totp;
+    pub mod client_info;
 }
 
 pub use config::env::cfg;
