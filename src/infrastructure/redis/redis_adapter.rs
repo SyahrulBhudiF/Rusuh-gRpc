@@ -1,22 +1,22 @@
 use crate::config::redis::RedisClient;
-use crate::domain::redis_repository::RedisRepository;
+use crate::domain::port::redis_port::RedisPort;
 use redis::{AsyncCommands, RedisResult};
 use tonic::Status;
 use tracing::log::error;
 
-pub struct RedisRepositoryImpl {
+pub struct RedisAdapter {
     pub redis: RedisClient,
 }
 
-impl RedisRepositoryImpl {
+impl RedisAdapter {
     pub fn new() -> Self {
         let redis = RedisClient::new().expect("Failed to create Redis client");
-        RedisRepositoryImpl { redis }
+        RedisAdapter { redis }
     }
 }
 
 #[async_trait::async_trait]
-impl RedisRepository for RedisRepositoryImpl {
+impl RedisPort for RedisAdapter {
     async fn set_value(&self, key: &str, value: &str) -> RedisResult<()> {
         let mut conn = self.redis.client.get_multiplexed_tokio_connection().await?;
         conn.set(key, value).await

@@ -1,39 +1,40 @@
 use crate::cfg;
 use crate::domain::entity::user::User;
-use crate::domain::redis_repository::RedisRepository;
-use crate::domain::repository::Repository;
-use crate::interceptor::auth_interceptor::{extract_token_from_metadata, validate_access_token};
-use crate::pb::auth::auth_service_server::AuthService;
+use crate::domain::port::db_port::DbPort;
+use crate::domain::port::redis_port::RedisPort;
+use crate::domain::service::jwt_service::Token;
+use crate::interface::interceptor::auth_interceptor::{
+    extract_token_from_metadata, validate_access_token,
+};
+use crate::pb::auth::auth_handler_server::AuthHandler;
 use crate::pb::auth::{
     LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
     User as ProtoUser,
 };
-use crate::util::client_info::{get_client_ip, get_device_info, get_location};
-use crate::util::jwt::Token;
 use bcrypt::{DEFAULT_COST, hash, verify};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
-pub struct AuthServiceImpl {
-    user_repo: Arc<dyn Repository<User> + Send + Sync>,
-    redis_repo: Arc<dyn RedisRepository + Send + Sync>,
+pub struct AuthUseCase {
+    adapter: Arc<dyn DbPort<User> + Send + Sync>,
+    redis_adapter: Arc<dyn RedisPort + Send + Sync>,
 }
 
-impl AuthServiceImpl {
+impl AuthUseCase {
     pub fn new(
-        user_repo: Arc<dyn Repository<User> + Send + Sync>,
-        redis_repo: Arc<dyn RedisRepository + Send + Sync>,
+        adapter: Arc<dyn DbPort<User> + Send + Sync>,
+        redis_adapter: Arc<dyn RedisPort + Send + Sync>,
     ) -> Self {
-        AuthServiceImpl {
-            user_repo,
-            redis_repo,
+        AuthUseCase {
+            adapter,
+            redis_adapter,
         }
     }
 }
 
 #[tonic::async_trait]
-impl AuthService for AuthServiceImpl {
+impl AuthHandler for AuthUseCase {
     async fn register(
         &self,
         request: Request<RegisterRequest>,
@@ -47,7 +48,7 @@ impl AuthService for AuthServiceImpl {
 
         let user = User::new(register_req.email, hashed_password);
 
-        self.user_repo.save(&user).await.map_err(|e| {
+        self.adapter.save(&user).await.map_err(|e| {
             error!("Failed to save user: {}", e);
             Status::internal(format!("Failed to save user: {}", e))
         })?;
@@ -72,7 +73,7 @@ impl AuthService for AuthServiceImpl {
         let login_req = request.into_inner();
 
         if let Some(user) = self
-            .user_repo
+            .adapter
             .find_by_coll("email", &login_req.email)
             .await
             .map_err(|_| {
@@ -93,7 +94,7 @@ impl AuthService for AuthServiceImpl {
                     Status::internal("Failed to serialize user")
                 })?;
 
-                self.redis_repo
+                self.redis_adapter
                     .set_value(&access_token, &*user_json)
                     .await
                     .expect("Failed to set value in Redis at Login");
@@ -121,7 +122,7 @@ impl AuthService for AuthServiceImpl {
         request: Request<LogoutRequest>,
     ) -> Result<Response<LogoutResponse>, Status> {
         let metadata = request.metadata().clone();
-        validate_access_token(&metadata, &self.redis_repo).await?;
+        validate_access_token(&metadata, &self.redis_adapter).await?;
 
         let access_token = extract_token_from_metadata(&metadata)
             .map_err(|e| {
@@ -133,7 +134,7 @@ impl AuthService for AuthServiceImpl {
         let logout_req = request.into_inner();
         let refresh_token = &logout_req.refresh_token;
 
-        self.redis_repo
+        self.redis_adapter
             .ensure_not_blacklisted(refresh_token)
             .await?;
 
@@ -143,7 +144,7 @@ impl AuthService for AuthServiceImpl {
             Status::unauthenticated("Invalid refresh token")
         })?;
 
-        self.redis_repo
+        self.redis_adapter
             .blacklist_token(refresh_token)
             .await
             .map_err(|e| {
@@ -151,7 +152,7 @@ impl AuthService for AuthServiceImpl {
                 Status::internal("Logout failed")
             })?;
 
-        self.redis_repo.blacklist_token(&access_token).await.ok();
+        self.redis_adapter.blacklist_token(&access_token).await.ok();
 
         info!("Logout success: {}", refresh_token);
 

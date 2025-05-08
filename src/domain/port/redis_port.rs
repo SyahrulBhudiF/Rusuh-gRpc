@@ -2,7 +2,7 @@ use redis::RedisResult;
 use tonic::Status;
 
 #[async_trait::async_trait]
-pub trait RedisRepository {
+pub trait RedisPort {
     async fn set_value(&self, key: &str, value: &str) -> RedisResult<()>;
     async fn get_value(&self, key: &str) -> RedisResult<Option<String>>;
     async fn delete_value(&self, key: &str) -> RedisResult<()>;
