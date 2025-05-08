@@ -10,5 +10,5 @@ CREATE TABLE user_security
     last_login_failed               TIMESTAMPZ,
     account_locked_until            TIMESTAMPZ,
     created_at                      TIMESTAMPZ NOT NULL DEFAULT NOW(),
-    updated_at                      TIMESTAMPZ NOT NULL DEFAULT NOW(),
+    updated_at                      TIMESTAMPZ NOT NULL DEFAULT NOW()
 )
