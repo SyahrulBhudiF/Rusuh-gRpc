@@ -1,5 +1,5 @@
 use crate::cfg;
-use crate::domain::entity::user::User;
+use crate::domain::entity::user::{User, UserStatus};
 use crate::domain::redis_repository::RedisRepository;
 use crate::domain::repository::Repository;
 use crate::interceptor::auth_interceptor::{extract_token_from_metadata, validate_access_token};
@@ -45,7 +45,7 @@ impl AuthService for AuthServiceImpl {
             Status::internal("Failed to hash password")
         })?;
 
-        let user = User::new(register_req.email, hashed_password);
+        let user = User::new(register_req.email, hashed_password, UserStatus::Active);
 
         self.user_repo.save(&user).await.map_err(|e| {
             error!("Failed to save user: {}", e);
