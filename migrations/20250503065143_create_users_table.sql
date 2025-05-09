@@ -4,7 +4,7 @@ CREATE TYPE user_status AS ENUM
     'inactive',
     'suspended',
     'banned'
-)
+);
 
 CREATE TABLE users
 (
