@@ -11,6 +11,8 @@ use crate::pb::auth::{
     LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
     User as ProtoUser,
 };
+use crate::util::client_info::{get_client_ip, get_device_info, get_location};
+use crate::util::jwt::Token;
 use bcrypt::{DEFAULT_COST, hash, verify};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -46,7 +48,7 @@ impl AuthHandler for AuthUseCase {
             Status::internal("Failed to hash password")
         })?;
 
-        let user = User::new(register_req.email, hashed_password);
+        let user = User::new(register_req.email, hashed_password, UserStatus::Active);
 
         self.adapter.save(&user).await.map_err(|e| {
             error!("Failed to save user: {}", e);
