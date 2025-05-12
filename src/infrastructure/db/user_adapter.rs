@@ -1,15 +1,15 @@
-use crate::domain::repository::Repository;
 use crate::domain::entity::user::User;
+use crate::domain::port::db_port::DbPort;
 use async_trait::async_trait;
 use sqlx::Error;
 use uuid::Uuid;
 
-pub struct UserRepositoryImpl {
+pub struct UserAdapter {
     pub pool: sqlx::PgPool,
 }
 
 #[async_trait]
-impl Repository<User> for UserRepositoryImpl {
+impl DbPort<User> for UserAdapter {
     async fn save(&self, data: &User) -> Result<(), Error> {
         sqlx::query(
             "INSERT INTO users (id, email, password, created_at, updated_at) 

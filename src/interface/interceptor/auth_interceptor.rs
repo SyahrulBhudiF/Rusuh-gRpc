@@ -1,6 +1,6 @@
 use crate::cfg;
-use crate::domain::redis_repository::RedisRepository;
-use crate::util::jwt::Token;
+use crate::domain::port::redis_port::RedisPort;
+use crate::domain::service::jwt_service::Token;
 use std::sync::Arc;
 use tonic::{Request, Status};
 
@@ -24,11 +24,11 @@ pub fn extract_token_from_metadata(
 
 pub async fn authenticate_interceptor(
     req: Request<()>,
-    redis_repo: &Arc<dyn RedisRepository + Send + Sync>,
+    redis_port: &Arc<dyn RedisPort + Send + Sync>,
 ) -> Result<Request<()>, Status> {
     let token = extract_token_from_metadata(req.metadata())?;
 
-    redis_repo.ensure_not_blacklisted(token).await?;
+    redis_port.ensure_not_blacklisted(token).await?;
 
     let config = cfg();
     match Token::validate_token(token, &config.access_secret) {
@@ -39,11 +39,11 @@ pub async fn authenticate_interceptor(
 
 pub async fn validate_access_token(
     metadata: &tonic::metadata::MetadataMap,
-    redis_repo: &Arc<dyn RedisRepository + Send + Sync>,
+    redis_port: &Arc<dyn RedisPort + Send + Sync>,
 ) -> Result<(), Status> {
     let token = extract_token_from_metadata(metadata)?;
 
-    redis_repo.ensure_not_blacklisted(token).await?;
+    redis_port.ensure_not_blacklisted(token).await?;
 
     let config = cfg();
     match Token::validate_token(token, &config.access_secret) {

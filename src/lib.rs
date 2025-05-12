@@ -1,3 +1,7 @@
+pub mod application {
+    pub mod auth_use_case;
+}
+
 pub mod config {
     pub mod db;
     pub mod env;
@@ -12,38 +16,44 @@ pub mod domain {
     pub mod entity {
         pub mod user;
     }
-    pub mod redis_repository;
-    pub mod repository;
-}
-
-pub mod handler {
-    pub mod auth_handler;
+    pub mod port {
+        pub mod db_port;
+        pub mod redis_port;
+    }
+    pub mod service {
+        pub mod totp_service;
+        pub mod jwt_service;
+    }
 }
 
 pub mod infrastructure {
-    pub mod redis_repository;
-    pub mod user_repository;
+    pub mod db {
+        pub mod user_adapter;
+    }
+    pub mod notification {
+        pub mod email_adapter;
+    }
+    pub mod redis {
+        pub mod redis_adapter;
+    }
 }
 
-pub mod interceptor {
-    pub mod auth_interceptor;
+pub mod interface {
+    pub mod grpc {
+        pub mod auth_handler;
+    }
+    pub mod common {
+        pub mod client_info;
+    }
+    pub mod interceptor {
+        pub mod auth_interceptor;
+    }
 }
 
 pub mod pb {
     pub mod auth;
 }
 
-pub mod service {
-    pub mod auth_service;
-}
-
-pub mod util {
-    pub mod email;
-    pub mod jwt;
-    pub mod totp;
-    pub mod client_info;
-}
-
 pub use config::env::cfg;
-pub use util::email::email;
-pub use util::totp::otp;
+pub use domain::service::totp_service::otp;
+pub use infrastructure::notification::email_adapter::email;

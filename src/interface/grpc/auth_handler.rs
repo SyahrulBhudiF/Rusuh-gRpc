@@ -1,30 +1,31 @@
+use crate::application::auth_use_case::AuthUseCase;
 use crate::domain::entity::user::User;
-use crate::domain::redis_repository::RedisRepository;
-use crate::domain::repository::Repository;
-use crate::pb::auth::auth_service_server::AuthService;
-use crate::pb::auth::{LoginRequest, LogoutRequest, LogoutResponse, RegisterRequest};
-use crate::pb::auth::{LoginResponse, RegisterResponse};
-use crate::service::auth_service::AuthServiceImpl;
+use crate::domain::port::db_port::DbPort;
+use crate::domain::port::redis_port::RedisPort;
+use crate::pb::auth::auth_handler_server::AuthHandler as Handler;
+use crate::pb::auth::{
+    LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 pub struct AuthHandler {
-    auth_service: AuthServiceImpl,
+    auth_service: AuthUseCase,
 }
 
 impl AuthHandler {
     pub fn new(
-        user_repo: Arc<dyn Repository<User> + Send + Sync>,
-        redis_repo: Arc<dyn RedisRepository + Send + Sync>,
+        port: Arc<dyn DbPort<User> + Send + Sync>,
+        redis_port: Arc<dyn RedisPort + Send + Sync>,
     ) -> Self {
         AuthHandler {
-            auth_service: AuthServiceImpl::new(user_repo, redis_repo),
+            auth_service: AuthUseCase::new(port, redis_port),
         }
     }
 }
 
 #[tonic::async_trait]
-impl AuthService for AuthHandler {
+impl Handler for AuthHandler {
     async fn register(
         &self,
         request: Request<RegisterRequest>,
