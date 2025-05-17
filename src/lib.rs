@@ -15,6 +15,9 @@ pub mod core {
 pub mod domain {
     pub mod entity {
         pub mod user;
+        pub mod user_info;
+        pub mod user_sessions;
+        pub mod user_security;
     }
     pub mod port {
         pub mod db_port;
@@ -29,6 +32,7 @@ pub mod domain {
 pub mod infrastructure {
     pub mod db {
         pub mod user_adapter;
+        mod user_session_adapter;
     }
     pub mod notification {
         pub mod email_adapter;

@@ -7,7 +7,7 @@ edition = "2024"
 tonic = "0.13.1"
 prost = "0.13.5"
 tokio = { version = "1.45.0", features = ["full"] }
-sqlx = { version = "0.8.5", features = ["postgres", "runtime-tokio", "uuid", "chrono"] }
+sqlx = { version = "0.8.5", features = ["postgres", "runtime-tokio", "uuid", "chrono", "macros"] }
 dotenv = "0.15"
 uuid = { version = "1.16.0", features = ["v4", "serde"] }
 serde = { version = "1.0.219", features = ["derive"] }
@@ -29,6 +29,7 @@ rand = "0.9.1"
 base32 = "0.5.1"
 reqwest = { version = "0.12.15", features = ["json"] }
 log = "0.4.27"
+ipnetwork = "0.21.1"
 
 [build-dependencies]
 prost-build = "0.13.5"

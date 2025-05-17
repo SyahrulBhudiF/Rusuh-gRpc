@@ -1,5 +1,5 @@
 use crate::cfg;
-use crate::domain::entity::user::User;
+use crate::domain::entity::user::{User, UserStatus};
 use crate::domain::port::db_port::DbPort;
 use crate::domain::port::redis_port::RedisPort;
 use crate::domain::service::jwt_service::Token;
@@ -11,7 +11,7 @@ use crate::pb::auth::{
     LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
     User as ProtoUser,
 };
-use crate::util::client_info::{get_client_ip, get_device_info, get_location};
+use crate::interface::common::client_info::{get_client_ip, get_device_info, get_location};
 use crate::util::jwt::Token;
 use bcrypt::{DEFAULT_COST, hash, verify};
 use std::sync::Arc;
