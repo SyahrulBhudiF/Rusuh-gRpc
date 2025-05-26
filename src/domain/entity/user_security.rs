@@ -18,6 +18,7 @@ pub struct UserSecurity {
     pub account_locked_until: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 impl UserSecurity {
@@ -47,6 +48,7 @@ impl UserSecurity {
             account_locked_until,
             created_at: Utc::now(),
             updated_at: Utc::now(),
+            deleted_at: None,
         }
     }
 }

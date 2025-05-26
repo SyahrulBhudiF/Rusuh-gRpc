@@ -39,6 +39,7 @@ pub struct UserInfo {
     pub birth_date: NaiveDate,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 impl UserInfo {
@@ -58,6 +59,7 @@ impl UserInfo {
             birth_date,
             created_at: Utc::now(),
             updated_at: Utc::now(),
+            deleted_at: None,
         }
     }
 }
