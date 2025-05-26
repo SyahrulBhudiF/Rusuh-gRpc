@@ -16,23 +16,31 @@ pub mod domain {
     pub mod entity {
         pub mod user;
         pub mod user_info;
-        pub mod user_sessions;
         pub mod user_security;
+        pub mod user_sessions;
     }
     pub mod port {
+        pub mod db {
+            pub mod user_info_port;
+            pub mod user_port;
+            pub mod user_security_port;
+            pub mod user_session_port;
+        }
         pub mod db_port;
         pub mod redis_port;
     }
     pub mod service {
-        pub mod totp_service;
         pub mod jwt_service;
+        pub mod totp_service;
     }
 }
 
 pub mod infrastructure {
     pub mod db {
         pub mod user_adapter;
-        mod user_session_adapter;
+        pub mod user_info_adapter;
+        pub mod user_security_adapter;
+        pub mod user_session_adapter;
     }
     pub mod notification {
         pub mod email_adapter;

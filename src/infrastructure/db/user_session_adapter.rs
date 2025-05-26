@@ -1,8 +1,7 @@
 use crate::domain::entity::user_sessions::UserSessions;
 use crate::domain::port::db_port::DbPort;
 use async_trait::async_trait;
-use sqlx::{Decode, Encode, Error};
-use std::net::IpAddr;
+use sqlx::Error;
 use uuid::Uuid;
 
 pub struct UserSessionAdapter {

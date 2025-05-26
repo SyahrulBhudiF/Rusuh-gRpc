@@ -12,7 +12,7 @@ pub struct UserAdapter {
 impl DbPort<User> for UserAdapter {
     async fn save(&self, data: &User) -> Result<(), Error> {
         sqlx::query(
-            "INSERT INTO users (id, email, password, created_at, updated_at) 
+            "INSERT INTO users (id, email, password, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5)",
         )
         .bind(data.id)

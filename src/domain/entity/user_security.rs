@@ -1,8 +1,9 @@
-use serde::{Serialize, Deserialize};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct UserSecurity {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -12,7 +13,7 @@ pub struct UserSecurity {
     pub last_password_change: DateTime<Utc>,
     pub password_reset_token: String,
     pub password_reset_expires_at: DateTime<Utc>,
-    pub failed_login_attempts: u16,
+    pub failed_login_attempts: i16,
     pub last_login_failed: DateTime<Utc>,
     pub account_locked_until: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
@@ -20,7 +21,18 @@ pub struct UserSecurity {
 }
 
 impl UserSecurity {
-    pub fn new(user_id: Uuid, mfa_enabled: bool, mfa_secret_key: String, email_verified_at: DateTime<Utc>, last_password_change: DateTime<Utc>, password_reset_token: String, password_reset_expires_at: DateTime<Utc>, failed_login_attempts: u16, last_login_failed: DateTime<Utc>, account_locked_until: DateTime<Utc>) -> Self {
+    pub fn new(
+        user_id: Uuid,
+        mfa_enabled: bool,
+        mfa_secret_key: String,
+        email_verified_at: DateTime<Utc>,
+        last_password_change: DateTime<Utc>,
+        password_reset_token: String,
+        password_reset_expires_at: DateTime<Utc>,
+        failed_login_attempts: i16,
+        last_login_failed: DateTime<Utc>,
+        account_locked_until: DateTime<Utc>,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             user_id,
