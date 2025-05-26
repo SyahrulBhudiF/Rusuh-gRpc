@@ -1,6 +1,8 @@
 use serde::{Serialize, Deserialize};
 use sqlx::FromRow;
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
+use std::net::IpAddr;
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct UserSessions {
@@ -21,6 +23,8 @@ impl UserSessions {
             login_ip,
             login_device,
             login_location,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         }
     }
 }
