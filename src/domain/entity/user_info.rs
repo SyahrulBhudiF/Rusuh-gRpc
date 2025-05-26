@@ -1,9 +1,9 @@
-use serde::{Serialize, Deserialize};
+use chrono::{DateTime, NaiveDate, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
-use chrono::{DateTime, Utc, NaiveDate};
 
-#[derive(Debug, Clone, FromRow, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "user_gender", rename_all = "snake_case")]
 pub enum UserGender {
     Male,
@@ -42,8 +42,14 @@ pub struct UserInfo {
 }
 
 impl UserInfo {
-    pub fn new(user_id: Uuid, first_name: String, last_name: String, gender:UserGender, birth_date: NaiveDate)->Self{
-        Self{
+    pub fn new(
+        user_id: Uuid,
+        first_name: String,
+        last_name: String,
+        gender: UserGender,
+        birth_date: NaiveDate,
+    ) -> Self {
+        Self {
             id: Uuid::new_v4(),
             user_id,
             first_name,

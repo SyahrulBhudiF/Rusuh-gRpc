@@ -1,7 +1,8 @@
 use crate::domain::entity::user_sessions::UserSessions;
 use crate::domain::port::db_port::DbPort;
 use async_trait::async_trait;
-use sqlx::{Error, Encode, Decode};
+use sqlx::{Decode, Encode, Error};
+use std::net::IpAddr;
 use uuid::Uuid;
 
 pub struct UserSessionAdapter {
@@ -24,9 +25,9 @@ impl DbPort<UserSessions> for UserSessionAdapter {
             .bind(data.updated_at)
             .execute(&self.pool)
             .await?;
-            Ok(())
+        Ok(())
     }
-    
+
     async fn find_by_id(&self, id: Uuid) -> Result<Option<UserSessions>, Error> {
         let result = sqlx::query_as::<_, UserSessions>(
             "SELECT id, user_id, login_ip, login_device, login_location, created_at, updated_at FROM user_sessions WHERE id = $1",
@@ -34,7 +35,7 @@ impl DbPort<UserSessions> for UserSessionAdapter {
             .bind(id)
             .fetch_optional(&self.pool)
             .await?;
-        
+
         Ok(result)
     }
 
@@ -43,23 +44,25 @@ impl DbPort<UserSessions> for UserSessionAdapter {
             "login_device" => {
                 "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE login_device = $1"
             }
-            
+
             "login_location" => {
                 "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE login_location = $1"
             }
-            
-            "id" => "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE id = $1",
+
+            "id" => {
+                "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE id = $1"
+            }
             _ => return Err(Error::RowNotFound),
         };
-        
+
         let result = sqlx::query_as::<_, UserSessions>(query)
-        .bind(value)
+            .bind(value)
             .fetch_optional(&self.pool)
             .await?;
-        
+
         Ok(result)
     }
-    
+
     async fn update(&self, id: Uuid, data: &UserSessions) -> Result<(), Error> {
         sqlx::query(
             "UPDATE user_sessions
@@ -75,10 +78,10 @@ impl DbPort<UserSessions> for UserSessionAdapter {
             .await?;
         Ok(())
     }
-    
+
     async fn delete(&self, id: Uuid) -> Result<(), Error> {
-        let query = sqlx::query("DELETE FROM user_session WHERE id = $1").bind(id);
-        
+        let query = sqlx::query("DELETE FROM user_sessions WHERE id = $1").bind(id);
+
         query.execute(&self.pool).await?;
         Ok(())
     }

@@ -3,6 +3,7 @@ use crate::domain::entity::user::{User, UserStatus};
 use crate::domain::port::db_port::DbPort;
 use crate::domain::port::redis_port::RedisPort;
 use crate::domain::service::jwt_service::Token;
+use crate::interface::common::client_info::{get_client_ip, get_device_info, get_location};
 use crate::interface::interceptor::auth_interceptor::{
     extract_token_from_metadata, validate_access_token,
 };
@@ -11,8 +12,6 @@ use crate::pb::auth::{
     LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
     User as ProtoUser,
 };
-use crate::interface::common::client_info::{get_client_ip, get_device_info, get_location};
-use crate::util::jwt::Token;
 use bcrypt::{DEFAULT_COST, hash, verify};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
