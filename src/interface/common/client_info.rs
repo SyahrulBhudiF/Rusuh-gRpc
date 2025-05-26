@@ -1,8 +1,8 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tonic::{Request, Status};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct GeoLocation {
     pub city: String,
     pub country: String,
@@ -24,14 +24,14 @@ pub fn get_device_info<T>(request: &Request<T>) -> Option<String> {
         .and_then(|ua| ua.to_str().ok().map(String::from))
 }
 
-pub async fn get_location(ip: &str) -> Result<GeoLocation, Status> {
+pub async fn get_location(ip: &str) -> Option<GeoLocation> {
     let url = format!("https://ipapi.co/{}/json/", ip);
 
     match reqwest::get(&url).await {
         Ok(response) => match response.json::<GeoLocation>().await {
-            Ok(geo_info) => Ok(geo_info),
-            Err(_) => Err(Status::internal("Error when Accessing geolocation service")),
+            Ok(geo_info) => Some(geo_info),
+            Err(_) => None,
         },
-        Err(_) => Err(Status::internal("Error when Accessing geolocation service")),
+        Err(_) => None,
     }
 }

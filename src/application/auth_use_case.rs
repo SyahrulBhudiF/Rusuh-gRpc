@@ -1,9 +1,12 @@
 use crate::cfg;
 use crate::domain::entity::user::{User, UserStatus};
+use crate::domain::entity::user_sessions::UserSessions;
 use crate::domain::port::db_port::DbPort;
 use crate::domain::port::redis_port::RedisPort;
 use crate::domain::service::jwt_service::Token;
-use crate::interface::common::client_info::{get_client_ip, get_device_info, get_location};
+use crate::interface::common::client_info::{
+    GeoLocation, get_client_ip, get_device_info, get_location,
+};
 use crate::interface::interceptor::auth_interceptor::{
     extract_token_from_metadata, validate_access_token,
 };
@@ -19,16 +22,19 @@ use tracing::{error, info};
 
 pub struct AuthUseCase {
     adapter: Arc<dyn DbPort<User> + Send + Sync>,
+    session: Arc<dyn DbPort<UserSessions> + Send + Sync>,
     redis_adapter: Arc<dyn RedisPort + Send + Sync>,
 }
 
 impl AuthUseCase {
     pub fn new(
         adapter: Arc<dyn DbPort<User> + Send + Sync>,
+        session: Arc<dyn DbPort<UserSessions> + Send + Sync>,
         redis_adapter: Arc<dyn RedisPort + Send + Sync>,
     ) -> Self {
         AuthUseCase {
             adapter,
+            session,
             redis_adapter,
         }
     }
@@ -71,6 +77,30 @@ impl AuthHandler for AuthUseCase {
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginResponse>, Status> {
+        let ip = get_client_ip(&request).ok_or_else(|| {
+            error!("Failed to get client IP");
+            Status::internal("Failed to get client IP")
+        })?;
+
+        let device = get_device_info(&request).ok_or_else(|| {
+            error!("Failed to get device info");
+            Status::internal("Failed to get device info")
+        })?;
+
+        let location = match get_location(&ip).await {
+            Some(loc) => loc,
+            None => {
+                error!("Failed to get geolocation for IP: {}", ip);
+                GeoLocation {
+                    city: String::new(),
+                    country: String::new(),
+                    region: String::new(),
+                    latitude: 0.0,
+                    longitude: 0.0,
+                }
+            }
+        };
+
         let login_req = request.into_inner();
 
         if let Some(user) = self
@@ -78,7 +108,7 @@ impl AuthHandler for AuthUseCase {
             .find_by_coll("email", &login_req.email)
             .await
             .map_err(|_| {
-                error!("Failed to query user");
+                error!("Failed to query user with email: {}", login_req.email);
                 Status::not_found("Failed to query user")
             })?
         {
@@ -96,7 +126,7 @@ impl AuthHandler for AuthUseCase {
                 })?;
 
                 self.redis_adapter
-                    .set_value(&access_token, &*user_json)
+                    .set_value(&access_token, &user_json)
                     .await
                     .expect("Failed to set value in Redis at Login");
                 info!("Redis set value for user: {}", user_json);
@@ -105,6 +135,18 @@ impl AuthHandler for AuthUseCase {
                     access_token,
                     refresh_token,
                 };
+
+                let user_session = UserSessions::new(
+                    user.id,
+                    ip.clone().parse().expect("Invalid IP address"),
+                    device.clone(),
+                    serde_json::to_string(&location).unwrap_or_default(),
+                );
+
+                self.session.save(&user_session).await.map_err(|e| {
+                    error!("Failed to save user session: {}", e);
+                    Status::internal("Failed to save user session")
+                })?;
 
                 info!("User logged in successfully: {}", user.email);
                 Ok(Response::new(response))

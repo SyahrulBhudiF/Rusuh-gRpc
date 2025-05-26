@@ -1,5 +1,6 @@
 use crate::application::auth_use_case::AuthUseCase;
 use crate::domain::entity::user::User;
+use crate::domain::entity::user_sessions::UserSessions;
 use crate::domain::port::db_port::DbPort;
 use crate::domain::port::redis_port::RedisPort;
 use crate::pb::auth::auth_handler_server::AuthHandler as Handler;
@@ -16,10 +17,11 @@ pub struct AuthHandler {
 impl AuthHandler {
     pub fn new(
         port: Arc<dyn DbPort<User> + Send + Sync>,
+        session: Arc<dyn DbPort<UserSessions> + Send + Sync>,
         redis_port: Arc<dyn RedisPort + Send + Sync>,
     ) -> Self {
         AuthHandler {
-            auth_service: AuthUseCase::new(port, redis_port),
+            auth_service: AuthUseCase::new(port, session, redis_port),
         }
     }
 }

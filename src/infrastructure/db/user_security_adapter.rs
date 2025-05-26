@@ -35,7 +35,7 @@ impl DbPort<UserSecurity> for UserSecurityAdapter {
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<UserSecurity>, Error> {
         let result = sqlx::query_as::<_, UserSecurity>(
-            "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE id = $1",
+            "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE id = $1 AND deleted_at IS NULL",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -47,13 +47,13 @@ impl DbPort<UserSecurity> for UserSecurityAdapter {
     async fn find_by_coll(&self, coll: &str, value: &str) -> Result<Option<UserSecurity>, Error> {
         let query = match coll {
             "mfa_enabled" => {
-                "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE mfa_enabled = $1"
+                "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE mfa_enabled = $1 AND deleted_at IS NULL"
             }
             "user_id" => {
-                "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE user_id = $1"
+                "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE user_id = $1 AND deleted_at IS NULL"
             }
             "id" => {
-                "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE id = $1"
+                "SELECT id, user_id, mfa_enabled, mfa_secret_key, email_verified_at, last_password_change, created_at, updated_at FROM user_security WHERE id = $1 AND deleted_at IS NULL"
             }
             _ => return Err(Error::RowNotFound),
         };
@@ -69,7 +69,7 @@ impl DbPort<UserSecurity> for UserSecurityAdapter {
         sqlx::query(
             "UPDATE user_security
             SET mfa_enabled = $1, email_verified_at = $2, failed_login_attempts = $3 ,last_password_change = $4, account_locked_until = $5, updated_at = $6 \
-            WHERE id = $7",
+            WHERE id = $7 AND deleted_at IS NULL",
         )
         .bind(&data.mfa_enabled)
         .bind(&data.email_verified_at)

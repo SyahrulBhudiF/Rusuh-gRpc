@@ -1,5 +1,6 @@
 use crate::config::db::get_db_pool;
 use crate::infrastructure::db::user_adapter::UserAdapter;
+use crate::infrastructure::db::user_session_adapter::UserSessionAdapter;
 use crate::infrastructure::redis::redis_adapter::RedisAdapter;
 use crate::interface::grpc::auth_handler::AuthHandler;
 use crate::pb::auth::auth_handler_server::AuthHandlerServer;
@@ -21,10 +22,11 @@ pub async fn server() -> Result<(), Box<dyn error::Error>> {
 
     let pool = get_db_pool().await?;
 
-    let user_repo = Arc::new(UserAdapter { pool });
+    let user_repo = Arc::new(UserAdapter::new(pool.clone()));
     let redis_repo = Arc::new(RedisAdapter::new());
+    let session_repo = Arc::new(UserSessionAdapter::new(pool.clone()));
 
-    let auth_handler = AuthHandler::new(user_repo, redis_repo);
+    let auth_handler = AuthHandler::new(user_repo, session_repo, redis_repo);
 
     let addr = "0.0.0.0:50051".parse()?;
     info!("Server listening on {}", addr);

@@ -8,6 +8,12 @@ pub struct UserSessionAdapter {
     pub pool: sqlx::PgPool,
 }
 
+impl UserSessionAdapter {
+    pub fn new(pool: sqlx::PgPool) -> Self {
+        UserSessionAdapter { pool }
+    }
+}
+
 #[async_trait]
 impl DbPort<UserSessions> for UserSessionAdapter {
     async fn save(&self, data: &UserSessions) -> Result<(), Error> {
@@ -29,7 +35,7 @@ impl DbPort<UserSessions> for UserSessionAdapter {
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<UserSessions>, Error> {
         let result = sqlx::query_as::<_, UserSessions>(
-            "SELECT id, user_id, login_ip, login_device, login_location, created_at, updated_at FROM user_sessions WHERE id = $1",
+            "SELECT id, user_id, login_ip, login_device, login_location, created_at, updated_at FROM user_sessions WHERE id = $1 AND deleted_at IS NULL",
         )
             .bind(id)
             .fetch_optional(&self.pool)
@@ -41,15 +47,15 @@ impl DbPort<UserSessions> for UserSessionAdapter {
     async fn find_by_coll(&self, coll: &str, value: &str) -> Result<Option<UserSessions>, Error> {
         let query = match coll {
             "login_device" => {
-                "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE login_device = $1"
+                "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE login_device = $1 AND deleted_at IS NULL"
             }
 
             "login_location" => {
-                "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE login_location = $1"
+                "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE login_location = $1 AND deleted_at IS NULL"
             }
 
             "id" => {
-                "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE id = $1"
+                "SELECT id, user_id, login_ip, login_device, login_location FROM user_sessions WHERE id = $1 AND deleted_at IS NULL"
             }
             _ => return Err(Error::RowNotFound),
         };
@@ -66,7 +72,7 @@ impl DbPort<UserSessions> for UserSessionAdapter {
         sqlx::query(
             "UPDATE user_sessions
                 SET login_ip = login_ip + $1, login_device = login_device + $2, login_location = login_location + $3, updated_at = $4
-                WHERE id = $5",
+                WHERE id = $5 AND deleted_at IS NULL",
         )
             .bind(data.login_ip)
             .bind(&data.login_device)

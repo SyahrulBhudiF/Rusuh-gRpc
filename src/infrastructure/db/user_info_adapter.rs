@@ -29,21 +29,23 @@ impl DbPort<UserInfo> for UserInfoAdapter {
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<UserInfo>, Error> {
-        let result = sqlx::query_as::<_, UserInfo>("SELECT * FROM user_info WHERE id = $1")
-            .bind(id)
-            .fetch_optional(&self.pool)
-            .await?;
+        let result = sqlx::query_as::<_, UserInfo>(
+            "SELECT * FROM user_info WHERE id = $1 AND deleted_at IS NULL",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?;
 
         Ok(result)
     }
 
     async fn find_by_coll(&self, coll: &str, value: &str) -> Result<Option<UserInfo>, Error> {
         let query = match coll {
-            "user_id" => "SELECT * FROM user_info WHERE user_id = $1",
-            "first_name" => "SELECT * FROM user_info WHERE first_name = $1",
-            "last_name" => "SELECT * FROM user_info WHERE last_name = $1",
-            "gender" => "SELECT * FROM user_info WHERE gender = $1",
-            "id" => "SELECT * FROM user_info WHERE id = $1",
+            "user_id" => "SELECT * FROM user_info WHERE user_id = $1 AND deleted_at IS NULL",
+            "first_name" => "SELECT * FROM user_info WHERE first_name = $1 AND deleted_at IS NULL",
+            "last_name" => "SELECT * FROM user_info WHERE last_name = $1 AND deleted_at IS NULL",
+            "gender" => "SELECT * FROM user_info WHERE gender = $1 AND deleted_at IS NULL",
+            "id" => "SELECT * FROM user_info WHERE id = $1 AND deleted_at IS NULL",
             &_ => return Err(Error::RowNotFound),
         };
 
@@ -58,7 +60,7 @@ impl DbPort<UserInfo> for UserInfoAdapter {
     async fn update(&self, id: Uuid, data: &UserInfo) -> Result<(), Error> {
         sqlx::query(
             "UPDATE user_info
-            SET first_name = $1, last_name = $2, updated_at = $3 WHERE id = $4",
+            SET first_name = $1, last_name = $2, updated_at = $3 WHERE id = $4 AND deleted_at IS NULL",
         )
         .bind(&data.first_name)
         .bind(&data.last_name)

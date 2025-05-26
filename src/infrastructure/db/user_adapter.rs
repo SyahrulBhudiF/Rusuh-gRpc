@@ -2,10 +2,17 @@ use crate::domain::entity::user::User;
 use crate::domain::port::db_port::DbPort;
 use async_trait::async_trait;
 use sqlx::Error;
+use tracing::info;
 use uuid::Uuid;
 
 pub struct UserAdapter {
     pub pool: sqlx::PgPool,
+}
+
+impl UserAdapter {
+    pub fn new(pool: sqlx::PgPool) -> Self {
+        UserAdapter { pool }
+    }
 }
 
 #[async_trait]
@@ -27,7 +34,7 @@ impl DbPort<User> for UserAdapter {
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, Error> {
         let result = sqlx::query_as::<_, User>(
-            "SELECT id, email, password, created_at, updated_at FROM users WHERE id = $1",
+            "SELECT id, email, password, status,created_at, updated_at, deleted_at FROM users WHERE id = $1 AND deleted_at IS NULL",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -39,16 +46,22 @@ impl DbPort<User> for UserAdapter {
     async fn find_by_coll(&self, coll: &str, value: &str) -> Result<Option<User>, Error> {
         let query = match coll {
             "email" => {
-                "SELECT id, email, password, created_at, updated_at FROM users WHERE email = $1"
+                "SELECT id, email, password, status, created_at, updated_at, deleted_at FROM users WHERE email = $1 AND deleted_at IS NULL"
             }
-            "id" => "SELECT id, email, password, created_at, updated_at FROM users WHERE id = $1",
+            "id" => {
+                "SELECT id, email, password, status, created_at, updated_at, deleted_at FROM users WHERE id = $1 AND deleted_at IS NULL"
+            }
             _ => return Err(Error::RowNotFound),
         };
 
         let result = sqlx::query_as::<_, User>(query)
             .bind(value)
             .fetch_optional(&self.pool)
-            .await?;
+            .await
+            .map_err(|e| {
+                info!("Error finding user by collection: {}", e);
+                e
+            })?;
 
         Ok(result)
     }
@@ -57,7 +70,7 @@ impl DbPort<User> for UserAdapter {
         sqlx::query(
             "UPDATE users
              SET email = $1, password = $2, updated_at = $3
-             WHERE id = $4",
+             WHERE id = $4 AND deleted_at IS NULL",
         )
         .bind(&data.email)
         .bind(&data.password)
