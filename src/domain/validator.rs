@@ -8,9 +8,8 @@ pub trait FromRequest<T>: Sized {
 pub trait ValidateFromRequest<T>: FromRequest<T> + Validate {
     fn validate_from_request(request: Request<T>) -> Result<Self, Status> {
         let dto = Self::from_request(request);
-        dto.validate().map_err(|e| {
-            Status::invalid_argument(format_validation_errors(e))
-        })?;
+        dto.validate()
+            .map_err(|e| Status::invalid_argument(format_validation_errors(e)))?;
         Ok(dto)
     }
 }

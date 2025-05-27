@@ -1,5 +1,5 @@
-use redis::{Client, RedisResult};
-use crate::cfg; // Import cfg from the crate root
+use crate::cfg;
+use redis::{Client, RedisResult}; // Import cfg from the crate root
 
 pub struct RedisClient {
     pub client: Client,

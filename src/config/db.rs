@@ -1,7 +1,7 @@
+use crate::cfg;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Error, PgPool};
 use std::time;
-use crate::cfg;
 
 pub async fn get_db_pool() -> Result<PgPool, Error> {
     let config = cfg();
