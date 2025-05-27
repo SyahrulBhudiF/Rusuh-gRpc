@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tonic = "0.13.1"
-prost = "0.13.5"
+tonic = { version = "0.13.1", features = ["transport", "prost"] }
+prost = { version = "0.13.5" }
 tokio = { version = "1.45.1", features = ["full"] }
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "uuid", "chrono", "macros", "ipnet"] }
 dotenv = "0.15"
@@ -28,13 +28,11 @@ otpauth = "0.5.1"
 rand = "0.9.1"
 base32 = "0.5.1"
 reqwest = { version = "0.12.15", features = ["json"] }
-prost-validate = "0.2.6"
 validator = { version = "0.20.0", features = ["derive"] }
+fancy-regex = "0.14.0"
 
 [build-dependencies]
-prost-validate-build = "0.2.6"
-prost-build = "0.13.5"
-tonic-build = "0.13.1"
+tonic-build = { version = "0.13.1", features = ["prost"] }
 
 [lib]
 name = "rusuh_grpc"

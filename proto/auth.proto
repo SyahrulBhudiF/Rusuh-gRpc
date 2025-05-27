@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package auth;
 
-import "validate/validate.proto";
 
 service AuthHandler {
   rpc Register (RegisterRequest) returns (RegisterResponse);
@@ -16,14 +15,8 @@ message User {
 }
 
 message RegisterRequest {
-  string email = 1 [(validate.rules).string = {
-    min_len: 1,
-    email: true
-  }];
-  string password = 2 [(validate.rules).string = {
-    min_len: 8,
-    max_len: 128
-  }];
+  string email = 1;
+  string password = 2;
 }
 
 message RegisterResponse {
@@ -31,11 +24,8 @@ message RegisterResponse {
 }
 
 message LoginRequest {
-  string email = 1 [(validate.rules).string = {
-    min_len: 1,
-    email: true
-  }];
-  string password = 2 [(validate.rules).string.min_len = 1];
+  string email = 1;
+  string password = 2;
 }
 
 message LoginResponse {
@@ -44,7 +34,7 @@ message LoginResponse {
 }
 
 message LogoutRequest {
-  string refresh_token = 1 [(validate.rules).string.min_len = 1];
+  string refresh_token = 1;
 }
 
 message LogoutResponse {

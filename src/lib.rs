@@ -12,7 +12,11 @@ pub mod core {
     pub mod server;
 }
 
+#[macro_use]
 pub mod domain {
+    pub mod dto {
+        pub mod auth_dto;
+    }
     pub mod entity {
         pub mod user;
         pub mod user_info;
@@ -33,6 +37,7 @@ pub mod domain {
         pub mod jwt_service;
         pub mod totp_service;
     }
+    pub mod validator;
 }
 
 pub mod infrastructure {

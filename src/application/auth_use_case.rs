@@ -1,23 +1,15 @@
 use crate::cfg;
+use crate::domain::dto::auth_dto::{LoginDto, LogoutDto, RegisterDto};
 use crate::domain::entity::user::{User, UserStatus};
 use crate::domain::entity::user_sessions::UserSessions;
 use crate::domain::port::db_port::DbPort;
 use crate::domain::port::redis_port::RedisPort;
 use crate::domain::service::jwt_service::Token;
-use crate::interface::common::client_info::{
-    GeoLocation, get_client_ip, get_device_info, get_location,
-};
-use crate::interface::interceptor::auth_interceptor::{
-    extract_token_from_metadata, validate_access_token,
-};
-use crate::pb::auth::auth_handler_server::AuthHandler;
-use crate::pb::auth::{
-    LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
-    User as ProtoUser,
-};
+use crate::interface::common::client_info::GeoLocation;
+use crate::pb::auth::{LoginResponse, LogoutResponse, RegisterResponse, User as UserResponse};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use std::sync::Arc;
-use tonic::{Request, Response, Status};
+use tonic::{Response, Status};
 use tracing::{error, info};
 
 pub struct AuthUseCase {
@@ -40,27 +32,38 @@ impl AuthUseCase {
     }
 }
 
-#[tonic::async_trait]
-impl AuthHandler for AuthUseCase {
-    async fn register(
+impl AuthUseCase {
+    pub(crate) async fn register(
         &self,
-        request: Request<RegisterRequest>,
+        request: RegisterDto,
     ) -> Result<Response<RegisterResponse>, Status> {
-        let register_req = request.into_inner();
+        let user_exists = self
+            .adapter
+            .find_by_coll("email", &request.email)
+            .await
+            .map_err(|_| {
+                error!("Failed to query user with email: {}", request.email);
+                Status::internal("Failed to query user")
+            })?;
 
-        let hashed_password = hash(&register_req.password, DEFAULT_COST).map_err(|_| {
+        if user_exists.is_some() {
+            error!("User with email {} already exists", request.email);
+            return Err(Status::already_exists("User already exists"));
+        }
+
+        let hashed_password = hash(&request.password, DEFAULT_COST).map_err(|_| {
             error!("Failed to hash password");
             Status::internal("Failed to hash password")
         })?;
 
-        let user = User::new(register_req.email, hashed_password, UserStatus::Active);
+        let user = User::new(request.email, hashed_password, UserStatus::Active);
 
         self.adapter.save(&user).await.map_err(|e| {
             error!("Failed to save user: {}", e);
             Status::internal(format!("Failed to save user: {}", e))
         })?;
 
-        let proto_user = ProtoUser {
+        let proto_user = UserResponse {
             id: user.id.to_string(),
             email: user.email.clone(),
         };
@@ -73,35 +76,14 @@ impl AuthHandler for AuthUseCase {
         Ok(Response::new(response))
     }
 
-    async fn login(
+    pub(crate) async fn login(
         &self,
-        request: Request<LoginRequest>,
+        request: LoginDto,
+        ip: String,
+        device: String,
+        location: GeoLocation,
     ) -> Result<Response<LoginResponse>, Status> {
-        let ip = get_client_ip(&request).ok_or_else(|| {
-            error!("Failed to get client IP");
-            Status::internal("Failed to get client IP")
-        })?;
-
-        let device = get_device_info(&request).ok_or_else(|| {
-            error!("Failed to get device info");
-            Status::internal("Failed to get device info")
-        })?;
-
-        let location = match get_location(&ip).await {
-            Some(loc) => loc,
-            None => {
-                error!("Failed to get geolocation for IP: {}", ip);
-                GeoLocation {
-                    city: String::new(),
-                    country: String::new(),
-                    region: String::new(),
-                    latitude: 0.0,
-                    longitude: 0.0,
-                }
-            }
-        };
-
-        let login_req = request.into_inner();
+        let login_req = request;
 
         if let Some(user) = self
             .adapter
@@ -160,21 +142,12 @@ impl AuthHandler for AuthUseCase {
         Err(Status::unauthenticated("Invalid email or password"))
     }
 
-    async fn logout(
+    pub(crate) async fn logout(
         &self,
-        request: Request<LogoutRequest>,
+        request: LogoutDto,
+        access_token: String,
     ) -> Result<Response<LogoutResponse>, Status> {
-        let metadata = request.metadata().clone();
-        validate_access_token(&metadata, &self.redis_adapter).await?;
-
-        let access_token = extract_token_from_metadata(&metadata)
-            .map_err(|e| {
-                error!("Failed to extract token: {}", e);
-                Status::unauthenticated("Invalid token")
-            })?
-            .to_string();
-
-        let logout_req = request.into_inner();
+        let logout_req = request;
         let refresh_token = &logout_req.refresh_token;
 
         self.redis_adapter

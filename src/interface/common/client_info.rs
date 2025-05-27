@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use tonic::{Request, Status};
+use tonic::Request;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GeoLocation {

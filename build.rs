@@ -1,12 +1,10 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=proto/auth.proto");
-
-    let descriptor_path =
-        std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("file_descriptor_set.bin");
+    println!("cargo:rerun-if-changed=proto/buf/validate/validate.proto");
 
     tonic_build::configure()
-        .file_descriptor_set_path(descriptor_path)
         .out_dir("src/pb")
+        .protoc_arg("--experimental_allow_proto3_optional")
         .compile_protos(&["proto/auth.proto"], &["proto"])?;
 
     Ok(())
