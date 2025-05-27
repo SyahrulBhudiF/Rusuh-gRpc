@@ -28,7 +28,7 @@ The project is organized to reflect a Hexagonal Architecture:
     -   **`interface/`**: Represents the "driving adapters" or the primary ways the external world interacts with the application.
         -   **`common/`**: Shared utilities for the interface layer (e.g., [`client_info.rs`](src/interface/common/client_info.rs:0)).
         -   **`grpc/`**: gRPC service handlers (driving adapters) that translate incoming requests and call application use cases (e.g., [`auth_handler.rs`](src/interface/grpc/auth_handler.rs:0)).
-        -   **`interceptor/`**: gRPC interceptors, which are also part of the driving adapter mechanism (e.g., [`auth_interceptor.rs`](src/interface/interceptor/auth_interceptor.rs:0)).
+        -   **`interceptor/`**: gRPC interceptors, which are also part of the driving adapter mechanism (e.g., [`auth_interceptor.rs`](src/interface/grpc/interceptor/auth_interceptor.rs:0)).
     -   **`pb/`**: Auto-generated Rust code from the `.proto` files (e.g., [`auth.rs`](src/pb/auth.rs:0)). These support the gRPC driving adapters.
     -   **`util/`**: General utility modules.
         -   **`template/`**: HTML templates (e.g., [`otp.html`](src/util/template/otp.html:0)).
@@ -63,7 +63,7 @@ This project is structured following the **Hexagonal Architecture**, also known 
 *   **Adapters**:
     *   Adapters bridge the gap between the ports and the external world. They translate requests and responses between the application core's defined ports and the specific technology or tool being used.
     *   **Driving Adapters**:
-        *   Located in the **`interface/`** layer (e.g., gRPC handlers in [`interface/grpc/auth_handler.rs`](src/interface/grpc/auth_handler.rs:0), interceptors in [`interface/interceptor/auth_interceptor.rs`](src/interface/interceptor/auth_interceptor.rs:0)).
+        *   Located in the **`interface/`** layer (e.g., gRPC handlers in [`interface/grpc/auth_handler.rs`](src/interface/grpc/auth_handler.rs:0), interceptors in [`interface/interceptor/auth_interceptor.rs`](src/interface/grpc/interceptor/auth_interceptor.rs:0)).
         *   These adapters initiate interaction with the application core. They adapt external requests (e.g., an HTTP request, a gRPC call, a CLI command) to calls on the application's driving ports (use cases).
     *   **Driven Adapters**:
         *   Located in the **`infrastructure/`** layer (e.g., database implementations in [`infrastructure/db/user_adapter.rs`](src/infrastructure/db/user_adapter.rs:0), Redis cache in [`infrastructure/redis/redis_adapter.rs`](src/infrastructure/redis/redis_adapter.rs:0)).

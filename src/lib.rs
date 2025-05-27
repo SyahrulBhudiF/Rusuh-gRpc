@@ -57,18 +57,27 @@ pub mod infrastructure {
 
 pub mod interface {
     pub mod grpc {
-        pub mod auth_handler;
+        pub mod interceptor {
+            pub mod auth_interceptor;
+        }
+        pub mod handler {
+            pub mod auth_handler;
+        }
+        pub mod layer {
+            pub mod logging_layer;
+        }
     }
     pub mod common {
         pub mod client_info;
-    }
-    pub mod interceptor {
-        pub mod auth_interceptor;
     }
 }
 
 pub mod pb {
     pub mod auth;
+}
+
+pub mod util {
+    pub mod util;
 }
 
 pub use config::env::cfg;

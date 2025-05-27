@@ -7,7 +7,7 @@ use crate::domain::port::redis_port::RedisPort;
 use crate::domain::service::jwt_service::Token;
 use crate::interface::common::client_info::GeoLocation;
 use crate::pb::auth::{LoginResponse, LogoutResponse, RegisterResponse, User as UserResponse};
-use bcrypt::{DEFAULT_COST, hash, verify};
+use crate::util::util::{hash_password_async, verify_password_async};
 use std::sync::Arc;
 use tonic::{Response, Status};
 use tracing::{error, info};
@@ -51,8 +51,8 @@ impl AuthUseCase {
             return Err(Status::already_exists("User already exists"));
         }
 
-        let hashed_password = hash(&request.password, DEFAULT_COST).map_err(|_| {
-            error!("Failed to hash password");
+        let hashed_password = hash_password_async(request.password).await.map_err(|e| {
+            error!("Failed to hash password: {}", e);
             Status::internal("Failed to hash password")
         })?;
 
@@ -94,7 +94,9 @@ impl AuthUseCase {
                 Status::not_found("Failed to query user")
             })?
         {
-            return if verify(&login_req.password, &user.password).unwrap_or(false) {
+            let password_valid = verify_password_async(&login_req.password, &user.password).await;
+
+            return if let Ok(true) = password_valid {
                 let (access_token, refresh_token) = Token::create_tokens(user.id.to_string())
                     .await
                     .map_err(|_| {
@@ -133,7 +135,12 @@ impl AuthUseCase {
                 info!("User logged in successfully: {}", user.email);
                 Ok(Response::new(response))
             } else {
-                error!("Invalid password or email for user: {}", login_req.email);
+                if let Err(e) = password_valid {
+                    error!("Failed to verify password: {}", e);
+                } else {
+                    error!("Invalid password or email for user: {}", login_req.email);
+                }
+
                 Err(Status::unauthenticated("Invalid password or email"))
             };
         }

@@ -8,7 +8,7 @@ use crate::domain::validator::ValidateFromRequest;
 use crate::interface::common::client_info::{
     GeoLocation, get_client_ip, get_device_info, get_location,
 };
-use crate::interface::interceptor::auth_interceptor::{
+use crate::interface::grpc::interceptor::auth_interceptor::{
     extract_token_from_metadata, validate_access_token,
 };
 use crate::pb::auth::auth_handler_server::AuthHandler as Handler;

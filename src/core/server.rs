@@ -2,7 +2,8 @@ use crate::config::db::get_db_pool;
 use crate::infrastructure::db::user_adapter::UserAdapter;
 use crate::infrastructure::db::user_session_adapter::UserSessionAdapter;
 use crate::infrastructure::redis::redis_adapter::RedisAdapter;
-use crate::interface::grpc::auth_handler::AuthHandler;
+use crate::interface::grpc::handler::auth_handler::AuthHandler;
+use crate::interface::grpc::layer::logging_layer::LoggingLayer;
 use crate::pb::auth::auth_handler_server::AuthHandlerServer;
 use std::error;
 use std::sync::Arc;
@@ -13,12 +14,19 @@ use tower::ServiceBuilder;
 use tower::limit::ConcurrencyLimitLayer;
 use tower::timeout::TimeoutLayer;
 use tracing::info;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::FmtSpan;
 
 const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../../descriptor.bin");
 
 pub async fn server() -> Result<(), Box<dyn error::Error>> {
-    tracing_subscriber::fmt::init();
     dotenv::dotenv().ok();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_span_events(FmtSpan::CLOSE)
+        .with_ansi(true)
+        .init();
 
     let pool = get_db_pool().await?;
 
@@ -32,6 +40,7 @@ pub async fn server() -> Result<(), Box<dyn error::Error>> {
     info!("Server listening on {}", addr);
 
     let middleware_stack = ServiceBuilder::new()
+        .layer(LoggingLayer)
         .layer(TimeoutLayer::new(Duration::from_secs(10)))
         .layer(ConcurrencyLimitLayer::new(64))
         .into_inner();
