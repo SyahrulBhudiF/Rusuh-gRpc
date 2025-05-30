@@ -9,8 +9,10 @@ pub struct User {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RegisterRequest {
     #[prost(string, tag = "1")]
-    pub email: ::prost::alloc::string::String,
+    pub name: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
+    pub email: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
     pub password: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -49,10 +51,10 @@ pub mod auth_handler_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
     pub struct AuthHandlerClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -91,13 +93,14 @@ pub mod auth_handler_client {
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
             T: tonic::codegen::Service<
-                    http::Request<tonic::body::Body>,
-                    Response = http::Response<
-                        <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
-                    >,
+                http::Request<tonic::body::Body>,
+                Response = http::Response<
+                    <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            >,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::Body>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             AuthHandlerClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -135,43 +138,60 @@ pub mod auth_handler_client {
         pub async fn register(
             &mut self,
             request: impl tonic::IntoRequest<super::RegisterRequest>,
-        ) -> std::result::Result<tonic::Response<super::RegisterResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::RegisterResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/auth.AuthHandler/Register");
+            let path = http::uri::PathAndQuery::from_static(
+                "/auth.AuthHandler/Register",
+            );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("auth.AuthHandler", "Register"));
+            req.extensions_mut().insert(GrpcMethod::new("auth.AuthHandler", "Register"));
             self.inner.unary(req, path, codec).await
         }
         pub async fn login(
             &mut self,
             request: impl tonic::IntoRequest<super::LoginRequest>,
         ) -> std::result::Result<tonic::Response<super::LoginResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/auth.AuthHandler/Login");
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("auth.AuthHandler", "Login"));
+            req.extensions_mut().insert(GrpcMethod::new("auth.AuthHandler", "Login"));
             self.inner.unary(req, path, codec).await
         }
         pub async fn logout(
             &mut self,
             request: impl tonic::IntoRequest<super::LogoutRequest>,
         ) -> std::result::Result<tonic::Response<super::LogoutResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/auth.AuthHandler/Logout");
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("auth.AuthHandler", "Logout"));
+            req.extensions_mut().insert(GrpcMethod::new("auth.AuthHandler", "Logout"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -183,7 +203,7 @@ pub mod auth_handler_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with AuthHandlerServer.
@@ -192,7 +212,10 @@ pub mod auth_handler_server {
         async fn register(
             &self,
             request: tonic::Request<super::RegisterRequest>,
-        ) -> std::result::Result<tonic::Response<super::RegisterResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::RegisterResponse>,
+            tonic::Status,
+        >;
         async fn login(
             &self,
             request: tonic::Request<super::LoginRequest>,
@@ -223,7 +246,10 @@ pub mod auth_handler_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -278,16 +304,23 @@ pub mod auth_handler_server {
                 "/auth.AuthHandler/Register" => {
                     #[allow(non_camel_case_types)]
                     struct RegisterSvc<T: AuthHandler>(pub Arc<T>);
-                    impl<T: AuthHandler> tonic::server::UnaryService<super::RegisterRequest> for RegisterSvc<T> {
+                    impl<
+                        T: AuthHandler,
+                    > tonic::server::UnaryService<super::RegisterRequest>
+                    for RegisterSvc<T> {
                         type Response = super::RegisterResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::RegisterRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as AuthHandler>::register(&inner, request).await };
+                            let fut = async move {
+                                <T as AuthHandler>::register(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -316,16 +349,21 @@ pub mod auth_handler_server {
                 "/auth.AuthHandler/Login" => {
                     #[allow(non_camel_case_types)]
                     struct LoginSvc<T: AuthHandler>(pub Arc<T>);
-                    impl<T: AuthHandler> tonic::server::UnaryService<super::LoginRequest> for LoginSvc<T> {
+                    impl<T: AuthHandler> tonic::server::UnaryService<super::LoginRequest>
+                    for LoginSvc<T> {
                         type Response = super::LoginResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::LoginRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as AuthHandler>::login(&inner, request).await };
+                            let fut = async move {
+                                <T as AuthHandler>::login(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -354,16 +392,23 @@ pub mod auth_handler_server {
                 "/auth.AuthHandler/Logout" => {
                     #[allow(non_camel_case_types)]
                     struct LogoutSvc<T: AuthHandler>(pub Arc<T>);
-                    impl<T: AuthHandler> tonic::server::UnaryService<super::LogoutRequest> for LogoutSvc<T> {
+                    impl<
+                        T: AuthHandler,
+                    > tonic::server::UnaryService<super::LogoutRequest>
+                    for LogoutSvc<T> {
                         type Response = super::LogoutResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::LogoutRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as AuthHandler>::logout(&inner, request).await };
+                            let fut = async move {
+                                <T as AuthHandler>::logout(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -389,19 +434,25 @@ pub mod auth_handler_server {
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    let mut response = http::Response::new(tonic::body::Body::default());
-                    let headers = response.headers_mut();
-                    headers.insert(
-                        tonic::Status::GRPC_STATUS,
-                        (tonic::Code::Unimplemented as i32).into(),
-                    );
-                    headers.insert(
-                        http::header::CONTENT_TYPE,
-                        tonic::metadata::GRPC_CONTENT_TYPE,
-                    );
-                    Ok(response)
-                }),
+                _ => {
+                    Box::pin(async move {
+                        let mut response = http::Response::new(
+                            tonic::body::Body::default(),
+                        );
+                        let headers = response.headers_mut();
+                        headers
+                            .insert(
+                                tonic::Status::GRPC_STATUS,
+                                (tonic::Code::Unimplemented as i32).into(),
+                            );
+                        headers
+                            .insert(
+                                http::header::CONTENT_TYPE,
+                                tonic::metadata::GRPC_CONTENT_TYPE,
+                            );
+                        Ok(response)
+                    })
+                }
             }
         }
     }

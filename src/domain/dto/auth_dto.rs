@@ -24,6 +24,9 @@ fn password_validator(password: &str) -> Result<(), ValidationError> {
 
 #[derive(Debug, Validate)]
 pub struct RegisterDto {
+    #[validate(length(min = 1, message = "Name cannot be empty"))]
+    pub name: String,
+
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
 
@@ -58,6 +61,6 @@ pub struct LogoutDto {
     pub refresh_token: String,
 }
 
-impl_from_request!(RegisterDto, RegisterRequest, { email, password });
+impl_from_request!(RegisterDto, RegisterRequest, { name, email, password });
 impl_from_request!(LoginDto, LoginRequest, { email, password });
 impl_from_request!(LogoutDto, LogoutRequest, { refresh_token });

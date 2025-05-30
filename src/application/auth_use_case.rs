@@ -56,7 +56,12 @@ impl AuthUseCase {
             Status::internal("Failed to hash password")
         })?;
 
-        let user = User::new(request.email, hashed_password, UserStatus::Active);
+        let user = User::new(
+            request.name,
+            request.email,
+            hashed_password,
+            UserStatus::Active,
+        );
 
         self.adapter.save(&user).await.map_err(|e| {
             error!("Failed to save user: {}", e);

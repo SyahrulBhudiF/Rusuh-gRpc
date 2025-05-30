@@ -21,6 +21,7 @@ CREATE TYPE user_status AS ENUM
 CREATE TABLE users
 (
     id         UUID PRIMARY KEY,
+    name       VARCHAR(100)        NOT NULL,
     email      VARCHAR(255) UNIQUE NOT NULL,
     password   TEXT                NOT NULL,
     status     user_status         NOT NULL DEFAULT 'active',

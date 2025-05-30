@@ -35,6 +35,7 @@ impl UserStatus {
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
+    pub name: String,
     pub email: String,
     pub password: String,
     pub status: UserStatus,
@@ -44,9 +45,10 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(email: String, password: String, status: UserStatus) -> Self {
+    pub fn new(name: String, email: String, password: String, status: UserStatus) -> Self {
         Self {
             id: Uuid::new_v4(),
+            name,
             email,
             password,
             status,
