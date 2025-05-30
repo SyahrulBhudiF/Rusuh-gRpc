@@ -1,7 +1,7 @@
 use crate::application::auth_use_case::AuthUseCase;
-use crate::domain::dto::auth_dto::{LoginDto, LogoutDto, RegisterDto};
-use crate::domain::entity::user::User;
+use crate::domain::dto::auth_dto::{LoginDto, LogoutDto, RegisterDto, SendOtpDto, VerifyEmailDto};
 use crate::domain::entity::user_sessions::UserSessions;
+use crate::domain::port::db::user_port::UserPort;
 use crate::domain::port::db_port::DbPort;
 use crate::domain::port::redis_port::RedisPort;
 use crate::domain::validator::ValidateFromRequest;
@@ -14,7 +14,9 @@ use crate::interface::grpc::interceptor::auth_interceptor::{
 use crate::pb::auth::auth_handler_server::AuthHandler as Handler;
 use crate::pb::auth::{
     LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
+    SendOtpRequest,
 };
+use crate::pb::auth::{SendOtpResponse, VerifyEmailRequest, VerifyEmailResponse};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use tracing::error;
@@ -26,7 +28,7 @@ pub struct AuthHandler {
 
 impl AuthHandler {
     pub fn new(
-        port: Arc<dyn DbPort<User> + Send + Sync>,
+        port: Arc<dyn UserPort + Send + Sync>,
         session: Arc<dyn DbPort<UserSessions> + Send + Sync>,
         redis_port: Arc<dyn RedisPort + Send + Sync>,
     ) -> Self {
@@ -95,5 +97,21 @@ impl Handler for AuthHandler {
 
         let req = LogoutDto::validate_from_request(request)?;
         self.auth_service.logout(req, access_token).await
+    }
+
+    async fn send_otp(
+        &self,
+        request: Request<SendOtpRequest>,
+    ) -> Result<Response<SendOtpResponse>, Status> {
+        let dto = SendOtpDto::validate_from_request(request)?;
+        self.auth_service.send_otp(dto).await
+    }
+
+    async fn verify_email(
+        &self,
+        request: Request<VerifyEmailRequest>,
+    ) -> Result<Response<VerifyEmailResponse>, Status> {
+        let dto = VerifyEmailDto::validate_from_request(request)?;
+        self.auth_service.verify_email(dto).await
     }
 }

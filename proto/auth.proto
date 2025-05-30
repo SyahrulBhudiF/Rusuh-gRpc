@@ -2,16 +2,27 @@ syntax = "proto3";
 
 package auth;
 
-
 service AuthHandler {
   rpc Register (RegisterRequest) returns (RegisterResponse);
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc Logout (LogoutRequest) returns (LogoutResponse);
+  rpc SendOTP (SendOTPRequest) returns (SendOTPResponse);
+  rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse);
+}
+
+message RegisterData {
+  User user = 1;
+}
+
+message LoginData {
+  string access_token = 1;
+  string refresh_token = 2;
 }
 
 message User {
   string id = 1;
-  string email = 2;
+  string name = 2;
+  string email = 3;
 }
 
 message RegisterRequest {
@@ -21,7 +32,8 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-  User user = 1;
+  string message = 1;
+  RegisterData data = 2;
 }
 
 message LoginRequest {
@@ -30,8 +42,8 @@ message LoginRequest {
 }
 
 message LoginResponse {
-  string access_token = 1;
-  string refresh_token = 2;
+  string message = 1;
+  LoginData data = 2;
 }
 
 message LogoutRequest {
@@ -39,5 +51,22 @@ message LogoutRequest {
 }
 
 message LogoutResponse {
+  string message = 1;
+}
+
+message SendOTPRequest {
+  string email = 1;
+}
+
+message SendOTPResponse {
+  string message = 1;
+}
+
+message VerifyEmailRequest {
+  string email = 1;
+  string otp = 2;
+}
+
+message VerifyEmailResponse {
   string message = 1;
 }
