@@ -49,6 +49,6 @@ impl Totp {
 
 static OTP_HELPER: Lazy<Totp> = Lazy::new(|| Totp::init());
 
-pub fn otp() -> &'static Totp {
+pub fn totp() -> &'static Totp {
     &OTP_HELPER
 }
