@@ -35,6 +35,7 @@ pub mod domain {
     }
     pub mod service {
         pub mod jwt_service;
+        pub mod otp_service;
         pub mod totp_service;
     }
     pub mod validator;
@@ -81,5 +82,6 @@ pub mod util {
 }
 
 pub use config::env::cfg;
-pub use domain::service::totp_service::otp;
+pub use domain::service::otp_service::email_otp;
+pub use domain::service::totp_service::totp;
 pub use infrastructure::notification::email_adapter::email;

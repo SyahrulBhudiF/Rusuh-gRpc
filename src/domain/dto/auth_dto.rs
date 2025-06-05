@@ -1,6 +1,8 @@
 use crate::domain::validator::ValidateFromRequest;
 use crate::impl_from_request;
-use crate::pb::auth::{LoginRequest, LogoutRequest, RegisterRequest};
+use crate::pb::auth::{
+    LoginRequest, LogoutRequest, RegisterRequest, SendOtpRequest, VerifyEmailRequest,
+};
 use validator::{Validate, ValidationError};
 
 fn validate_password(pw: &str) -> bool {
@@ -61,6 +63,23 @@ pub struct LogoutDto {
     pub refresh_token: String,
 }
 
+#[derive(Debug, Validate)]
+pub struct SendOtpDto {
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+}
+
+#[derive(Debug, Validate)]
+pub struct VerifyEmailDto {
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+
+    #[validate(length(min = 6, max = 6, message = "OTP must be exactly 6 digits"))]
+    pub otp: String,
+}
+
 impl_from_request!(RegisterDto, RegisterRequest, { name, email, password });
 impl_from_request!(LoginDto, LoginRequest, { email, password });
 impl_from_request!(LogoutDto, LogoutRequest, { refresh_token });
+impl_from_request!(SendOtpDto, SendOtpRequest, { email });
+impl_from_request!(VerifyEmailDto, VerifyEmailRequest, { email, otp });
