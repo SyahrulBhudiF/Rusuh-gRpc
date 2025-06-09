@@ -50,10 +50,16 @@ pub async fn server() -> Result<(), Box<dyn error::Error>> {
         .build_v1()
         .unwrap();
 
+    let reflection_alpha = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+        .build_v1alpha()
+        .unwrap();
+
     Server::builder()
         .layer(middleware_stack)
         .add_service(AuthHandlerServer::new(auth_handler))
         .add_service(reflection_service)
+        .add_service(reflection_alpha)
         .serve(addr)
         .await?;
 
