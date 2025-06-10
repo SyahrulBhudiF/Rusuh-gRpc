@@ -73,7 +73,7 @@ impl DbPort<User> for UserAdapter {
         sqlx::query(
             "UPDATE users
              SET email = $1, password = $2, updated_at = $3, name = $4
-             WHERE id = $4 AND deleted_at IS NULL",
+             WHERE id = $5 AND deleted_at IS NULL",
         )
         .bind(&data.email)
         .bind(&data.password)

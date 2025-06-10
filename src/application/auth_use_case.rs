@@ -1,4 +1,6 @@
-use crate::domain::dto::auth_dto::{LoginDto, LogoutDto, RegisterDto, SendOtpDto, VerifyEmailDto};
+use crate::domain::dto::auth_dto::{
+    ForgotPasswordDto, LoginDto, LogoutDto, RegisterDto, SendOtpDto, VerifyEmailDto,
+};
 use crate::domain::entity::user::{User, UserStatus};
 use crate::domain::entity::user_sessions::UserSessions;
 use crate::domain::port::db::user_port::UserPort;
@@ -7,8 +9,8 @@ use crate::domain::port::redis_port::RedisPort;
 use crate::domain::service::jwt_service::Token;
 use crate::interface::common::client_info::GeoLocation;
 use crate::pb::auth::{
-    LoginData, LoginResponse, LogoutResponse, RegisterData, RegisterResponse, SendOtpResponse,
-    User as UserResponse, VerifyEmailResponse,
+    ForgotPasswordResponse, LoginData, LoginResponse, LogoutResponse, RegisterData,
+    RegisterResponse, SendOtpResponse, User as UserResponse, VerifyEmailResponse,
 };
 use crate::util::util::{hash_password_async, verify_password_async};
 use crate::{cfg, email, email_otp};
@@ -313,6 +315,68 @@ impl AuthUseCase {
 
         Ok(Response::new(VerifyEmailResponse {
             message: "Email verified successfully".to_string(),
+        }))
+    }
+
+    pub(crate) async fn forgot_password(
+        &self,
+        request: ForgotPasswordDto,
+    ) -> Result<Response<ForgotPasswordResponse>, Status> {
+        let existing_user = self
+            .adapter
+            .find_by_coll("email", &request.email)
+            .await
+            .map_err(|e| {
+                error!(
+                    "Database error during user lookup for email {}: {}",
+                    request.email, e
+                );
+                Status::internal("Failed to lookup user")
+            })?;
+
+        if existing_user.is_none() {
+            error!("User with email {} does not exist", request.email);
+            return Err(Status::not_found("User not found"));
+        }
+
+        let otp_key = format!("otp:{}", request.email);
+        let existing_otp = self.redis_adapter.get_value(&otp_key).await.map_err(|e| {
+            error!("Failed to get OTP from Redis: {}", e);
+            Status::internal("Failed to get OTP")
+        })?;
+
+        if existing_otp.is_none() || existing_otp.unwrap() != request.otp {
+            error!(
+                "OTP verification failed for email {}: Invalid code",
+                request.email
+            );
+            return Err(Status::invalid_argument("Invalid OTP code"));
+        }
+
+        let mut user = existing_user.unwrap();
+        let hashed_password = hash_password_async(request.password).await.map_err(|e| {
+            error!("Failed to hash new password: {}", e);
+            Status::internal("Failed to hash new password")
+        })?;
+
+        user.password = hashed_password;
+
+        self.adapter.update(user.id, &user).await.map_err(|e| {
+            error!("Failed to update password for user {}: {}", user.email, e);
+            Status::internal("Failed to update password")
+        })?;
+
+        self.redis_adapter
+            .delete_value(&otp_key)
+            .await
+            .map_err(|e| {
+                error!("Failed to remove OTP from Redis: {}", e);
+                Status::internal("Failed to remove OTP")
+            })?;
+
+        info!("Password reset successfully for email: {}", request.email);
+        Ok(Response::new(ForgotPasswordResponse {
+            message: "Password reset successfully".to_string(),
         }))
     }
 }

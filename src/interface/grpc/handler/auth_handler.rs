@@ -1,5 +1,7 @@
 use crate::application::auth_use_case::AuthUseCase;
-use crate::domain::dto::auth_dto::{LoginDto, LogoutDto, RegisterDto, SendOtpDto, VerifyEmailDto};
+use crate::domain::dto::auth_dto::{
+    ForgotPasswordDto, LoginDto, LogoutDto, RegisterDto, SendOtpDto, VerifyEmailDto,
+};
 use crate::domain::entity::user_sessions::UserSessions;
 use crate::domain::port::db::user_port::UserPort;
 use crate::domain::port::db_port::DbPort;
@@ -13,8 +15,8 @@ use crate::interface::grpc::interceptor::auth_interceptor::{
 };
 use crate::pb::auth::auth_handler_server::AuthHandler as Handler;
 use crate::pb::auth::{
-    LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RegisterRequest, RegisterResponse,
-    SendOtpRequest,
+    ForgotPasswordRequest, ForgotPasswordResponse, LoginRequest, LoginResponse, LogoutRequest,
+    LogoutResponse, RegisterRequest, RegisterResponse, SendOtpRequest,
 };
 use crate::pb::auth::{SendOtpResponse, VerifyEmailRequest, VerifyEmailResponse};
 use std::sync::Arc;
@@ -113,5 +115,13 @@ impl Handler for AuthHandler {
     ) -> Result<Response<VerifyEmailResponse>, Status> {
         let dto = VerifyEmailDto::validate_from_request(request)?;
         self.auth_service.verify_email(dto).await
+    }
+
+    async fn forgot_password(
+        &self,
+        request: Request<ForgotPasswordRequest>,
+    ) -> Result<Response<ForgotPasswordResponse>, Status> {
+        let dto = ForgotPasswordDto::validate_from_request(request)?;
+        self.auth_service.forgot_password(dto).await
     }
 }
