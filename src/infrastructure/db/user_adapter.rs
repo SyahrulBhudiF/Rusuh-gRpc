@@ -131,4 +131,32 @@ impl UserPort for UserAdapter {
 
         Ok(())
     }
+
+    async fn update_password(&self, id: Uuid, data: &User) -> Result<(), Error> {
+        let mut transaction = self.pool.begin().await?;
+
+        sqlx::query(
+            "UPDATE users SET password = $1, updated_at = $2 WHERE id = $3 AND deleted_at IS NULL",
+        )
+        .bind(&data.password)
+        .bind(Utc::now())
+        .bind(id)
+        .execute(&mut *transaction)
+        .await?;
+
+        sqlx::query(
+            "UPDATE user_security SET last_password_change = $1, updated_at = $2 WHERE user_id = $3 AND deleted_at IS NULL",
+        )
+            .bind(Utc::now())
+            .bind(Utc::now())
+            .bind(id)
+            .execute(&mut *transaction)
+            .await?;
+
+        transaction.commit().await?;
+
+        info!("Password updated for user: {}", id.to_string());
+
+        Ok(())
+    }
 }

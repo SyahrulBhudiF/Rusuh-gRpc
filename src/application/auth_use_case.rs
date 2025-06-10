@@ -339,6 +339,13 @@ impl AuthUseCase {
             return Err(Status::not_found("User not found"));
         }
 
+        if existing_user.clone().unwrap().status != UserStatus::Active {
+            error!("User with email {} is not active", request.email);
+            return Err(Status::permission_denied(
+                "User is not active, please verify your email",
+            ));
+        }
+
         let otp_key = format!("otp:{}", request.email);
         let existing_otp = self.redis_adapter.get_value(&otp_key).await.map_err(|e| {
             error!("Failed to get OTP from Redis: {}", e);
@@ -361,10 +368,13 @@ impl AuthUseCase {
 
         user.password = hashed_password;
 
-        self.adapter.update(user.id, &user).await.map_err(|e| {
-            error!("Failed to update password for user {}: {}", user.email, e);
-            Status::internal("Failed to update password")
-        })?;
+        self.adapter
+            .update_password(user.id, &user)
+            .await
+            .map_err(|e| {
+                error!("Failed to update password for user {}: {}", user.email, e);
+                Status::internal("Failed to update password")
+            })?;
 
         self.redis_adapter
             .delete_value(&otp_key)
